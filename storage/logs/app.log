@@ -827,10 +827,180 @@
 [2025-09-15 20:34:48] [INFO] New session created for user 3 from IP: ::1
 [2025-09-15 20:34:48] [INFO] Successful login for user 3 (Joojo) from ::1
 [2025-09-15 20:36:38] [INFO] Business created: TV 3 (ID: 30) by user Joojo
-[2025-09-23 16:22:52] [INFO] New session created for user 1 from IP: ::1
-[2025-09-23 16:22:52] [INFO] Successful login for user 1 (admin) from ::1
-[2025-09-23 16:28:11] [INFO] New session created for user 1 from IP: ::1
-[2025-09-23 16:28:11] [INFO] Successful login for user 1 (admin) from ::1
-[2025-09-23 16:31:39] [INFO] Business created: Kusi Frames (ID: 30) by user admin
-[2025-09-23 16:32:53] [INFO] Business created: Vida Farms (ID: 31) by user admin
-[2025-09-23 16:33:45] [INFO] Property created: Anthony Wiafe property (ID: 12) by user admin
+[2025-09-16 15:40:01] [INFO] New session created for user 3 from IP: ::1
+[2025-09-16 15:40:01] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-17 10:58:21] [INFO] New session created for user 3 from IP: ::1
+[2025-09-17 10:58:21] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-17 14:04:17] [INFO] New session created for user 3 from IP: ::1
+[2025-09-17 14:04:17] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-17 19:41:46] [INFO] New session created for user 3 from IP: ::1
+[2025-09-17 19:41:46] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-17 19:43:14] [INFO] Property created: Zayne Ewusi property (ID: 12) by user Joojo
+[2025-09-17 19:43:26] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:43:26] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:53:57] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:53:57] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:54:52] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:54:52] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:55:54] [INFO] Business created: Joojo Enterprise (ID: 31) by user Joojo
+[2025-09-17 19:56:07] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-17 19:56:07] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-21 12:51:29] [INFO] New session created for user 3 from IP: ::1
+[2025-09-21 12:51:29] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-21 14:11:35] [INFO] New session created for user 3 from IP: ::1
+[2025-09-21 14:11:35] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-21 14:22:30] [INFO] New session created for user 3 from IP: ::1
+[2025-09-21 14:22:30] [INFO] Successful login for user 3 (Joojo) from ::1
+[2025-09-26 13:02:29] [INFO] Successfully generated 2 QR codes for bulk print
+[2025-09-26 13:06:44] [INFO] Successfully generated 2 QR codes for bulk print
+[2025-09-26 13:07:45] [INFO] Successfully generated 2 QR codes for bulk print
+[2025-09-26 13:12:05] [DEBUG] Account search attempt - Number: PROP000001, Type: Property
+[2025-09-26 13:12:05] [DEBUG] Property found: Zayne Ewusi
+[2025-09-26 13:12:05] [DEBUG] Bill found: BILL2025P000012
+[2025-09-26 13:12:05] [DEBUG] Account search successful with valid bill
+[2025-09-26 13:12:22] [INFO] Payment recorded: GHS 100 for Zayne Ewusi (PROP000001) via Cash by user Joojo
+[2025-09-26 13:15:55] [INFO] Bill serving status updated - Bill ID: 50, Status: Served
+[2025-09-30 18:22:49] [INFO] Business created: Amuzu (ID: 31, Account: BIZ-CZ01-GA02-0001) by user admin
+[2025-09-30 18:25:43] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-09-30 18:25:43] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-01 05:45:08] [INFO] Property created: MEGAS property (ID: 12, Number: PROP-CZ01-GA02-00001) by user admin
+[2025-10-01 06:27:30] [INFO] Business deleted: TV 3 (ID: 30) and related records: 1 payment record(s), 2 bill record(s) by user admin
+[2025-10-01 06:27:41] [INFO] Business deleted: KabTech Consulting (ID: 29) and related records: 2 payment record(s), 2 bill record(s) by user admin
+[2025-10-01 06:29:10] [INFO] Business updated: Amuzu (ID: 31) by user admin
+[2025-10-01 06:30:38] [INFO] Business created: Aseye Enterprise (ID: 32, Account: BIZ-NZ02-RA01-0001) by user admin
+[2025-10-01 10:55:20] [INFO] Property deleted: Thelma property (ID: 13) by user admin
+[2025-10-02 02:33:27] [INFO] Bill serving status updated - Bill ID: 54, Status: Served
+[2025-10-02 02:41:54] [INFO] Property bill serving status updated - Bill ID: 53, Status: Served
+[2025-10-02 10:33:20] [DEBUG] Account search attempt - Number: BIZ-NZ02-RA01-0001, Type: Business
+[2025-10-02 10:33:20] [DEBUG] Business found: Aseye Enterprise
+[2025-10-02 10:33:20] [DEBUG] Bill found: BILL2025B000032
+[2025-10-02 10:33:20] [DEBUG] Account search successful with valid bill
+[2025-10-02 10:33:35] [INFO] Payment recorded: GHS 21 for Aseye Enterprise (BIZ-NZ02-RA01-0001) via Cash by user admin
+[2025-10-02 10:39:32] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 10:39:32] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 10:39:32] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 10:39:32] [DEBUG] Account search successful with valid bill
+[2025-10-02 10:40:10] [INFO] Payment recorded: GHS 82 for Thomas Enterprise (BIZ-CZ01-GA02-0002) via Cash by user admin
+[2025-10-02 11:01:16] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-02 11:01:16] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-02 11:36:28] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 11:36:28] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 11:36:28] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 11:36:28] [DEBUG] Account search successful with valid bill
+[2025-10-02 11:38:36] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 11:38:36] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 11:38:36] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 11:38:36] [DEBUG] Account search successful with valid bill
+[2025-10-02 11:38:55] [INFO] Payment recorded: GHS 100 for Thomas Enterprise (BIZ-CZ01-GA02-0002) via Cash by user admin
+[2025-10-02 12:09:32] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 12:09:32] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 12:09:32] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 12:09:32] [DEBUG] Account search successful with valid bill
+[2025-10-02 14:41:06] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 14:41:06] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 14:41:06] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 14:41:06] [DEBUG] Account search successful with valid bill
+[2025-10-02 14:42:31] [INFO] Bill serving status updated - Bill ID: 57, Status: Served
+[2025-10-02 15:13:35] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 15:13:35] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 15:13:35] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 15:13:35] [DEBUG] Account search successful with valid bill
+[2025-11-01 15:19:54] [DEBUG] Account search attempt - Number: BIZ-NZ02-RA01-0001, Type: Business
+[2025-11-01 15:19:54] [DEBUG] Business found: Aseye Enterprise
+[2025-11-01 15:19:54] [DEBUG] Bill found: BILL2025B000032
+[2025-11-01 15:19:54] [DEBUG] Account search successful with valid bill
+[2025-11-01 15:20:19] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-11-01 15:20:19] [DEBUG] Business found: Thomas Enterprise
+[2025-11-01 15:20:19] [DEBUG] Bill found: BILL2025B000033
+[2025-11-01 15:20:19] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:04:01] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 19:04:01] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 19:04:01] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 19:04:01] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:13:58] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0002, Type: Business
+[2025-10-02 19:13:58] [DEBUG] Business found: Thomas Enterprise
+[2025-10-02 19:13:58] [DEBUG] Bill found: BILL2025B000033
+[2025-10-02 19:13:58] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:14:57] [INFO] Business deleted: Amuzu (ID: 31) and related records: 1 payment record(s), 2 bill record(s) by user admin
+[2025-10-02 19:15:05] [INFO] Business deleted: Aseye Enterprise (ID: 32) and related records: 1 payment record(s), 2 bill record(s) by user admin
+[2025-10-02 19:15:13] [INFO] Business deleted: Thomas Enterprise (ID: 33) and related records: 2 payment record(s), 2 bill record(s) by user admin
+[2025-10-02 19:16:42] [INFO] Business created: MTN (ID: 34, Account: BIZ-EZ-EZME-0001) by user admin
+[2025-10-02 19:18:33] [INFO] Property created: Emma property (ID: 16, Number: PROP-NZ02-RA01-00001) by user admin
+[2025-10-02 19:19:42] [INFO] Business created: TV 3 (ID: 35, Account: BIZ-EZ-EZME-0002) by user admin
+[2025-10-02 19:20:26] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2025-10-02 19:20:26] [DEBUG] Business found: TV 3
+[2025-10-02 19:20:26] [DEBUG] Bill found: BILL2025B000035
+[2025-10-02 19:20:26] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:20:58] [INFO] Payment recorded: GHS 100 for TV 3 (BIZ-EZ-EZME-0002) via Cash by user admin
+[2025-10-02 19:21:16] [INFO] Bill serving status updated - Bill ID: 65, Status: Served
+[2025-10-02 19:21:44] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2025-10-02 19:21:44] [DEBUG] Business found: TV 3
+[2025-10-02 19:21:44] [DEBUG] Bill found: BILL2025B000035
+[2025-10-02 19:21:44] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:22:32] [INFO] Bill serving status updated - Bill ID: 67, Status: Served
+[2025-10-02 19:22:41] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2025-10-02 19:22:41] [DEBUG] Business found: TV 3
+[2025-10-02 19:22:41] [DEBUG] Bill found: BILL2025B000035
+[2025-10-02 19:22:41] [DEBUG] Account search successful with valid bill
+[2025-10-02 19:36:45] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2025-10-02 19:36:45] [DEBUG] Business found: TV 3
+[2025-10-02 19:36:45] [DEBUG] Bill found: BILL2025B000035 with amount_payable: 100.00
+[2025-10-02 19:36:45] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 100
+[2025-10-02 19:37:38] [INFO] Payment recorded: GHS 100 for TV 3 (BIZ-EZ-EZME-0002) via Cash by user admin
+[2025-10-02 19:37:50] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2025-10-02 19:37:50] [DEBUG] Business found: TV 3
+[2025-10-02 19:37:50] [DEBUG] Bill found: BILL2025B000035 with amount_payable: 0.00
+[2025-10-02 19:37:50] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 0
+[2026-03-01 19:58:52] [DEBUG] Account search attempt - Number: BIZ-EZ-EZME-0002, Type: Business
+[2026-03-01 19:58:52] [DEBUG] Business found: TV 3
+[2026-03-01 19:58:52] [DEBUG] Bill found: BILL2026B000035 with amount_payable: 300.00
+[2026-03-01 19:58:52] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 300
+[2025-10-03 13:26:02] [ERROR] QR code generation failed for bill ID 67: ext-gd not loaded
+[2025-10-03 13:26:44] [ERROR] QR code generation failed for bill ID 67: ext-gd not loaded
+[2025-10-03 13:26:45] [ERROR] QR code generation failed for bill ID 67: ext-gd not loaded
+[2025-10-03 13:30:16] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:30:16] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:30:37] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:30:53] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:39:57] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:40:00] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:53:37] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:54:22] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:54:22] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:54:58] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:54:58] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 13:55:12] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 14:01:17] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-03 14:01:17] [ERROR] Failed to log public activity: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[2025-10-04 07:44:29] [INFO] Property created: Zayne Ewusi property (ID: 17, Number: PROP-EZ-EZME-00001) by user admin
+[2025-10-04 07:46:16] [DEBUG] Account search attempt - Number: PROP-EZ-EZME-00001, Type: Property
+[2025-10-04 07:46:16] [DEBUG] Property found: Zayne Ewusi
+[2025-10-04 07:46:16] [DEBUG] Bill found: BILL2025P000017 with amount_payable: 250.00
+[2025-10-04 07:46:16] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 250
+[2025-10-04 07:46:37] [INFO] Payment recorded: GHS 50 for Zayne Ewusi (PROP-EZ-EZME-00001) via Cash by user admin
+[2025-10-04 07:56:53] [DEBUG] Account search attempt - Number: PROP-EZ-EZME-00001, Type: Property
+[2025-10-04 07:56:53] [DEBUG] Property found: Zayne Ewusi
+[2025-10-04 07:56:53] [DEBUG] Bill found: BILL2025P000017 with amount_payable: 200.00
+[2025-10-04 07:56:53] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 200
+[2025-10-04 07:57:13] [INFO] Payment recorded: GHS 100 for Zayne Ewusi (PROP-EZ-EZME-00001) via Cash by user admin
+[2025-10-04 08:11:48] [INFO] Property created: Beatrice Akueteh property (ID: 18, Number: PROP-NZ02-RA01-00002) by user admin
+[2025-10-04 08:12:30] [DEBUG] Account search attempt - Number: PROP-NZ02-RA01-00002, Type: Property
+[2025-10-04 08:12:30] [DEBUG] Property found: Beatrice Akueteh
+[2025-10-04 08:12:30] [DEBUG] Bill found: BILL2025P000018 with amount_payable: 300.00
+[2025-10-04 08:12:30] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 300
+[2025-10-04 08:13:41] [DEBUG] Account search attempt - Number: PROP-NZ02-RA01-00002, Type: Property
+[2025-10-04 08:13:41] [DEBUG] Property found: Beatrice Akueteh
+[2025-10-04 08:13:41] [DEBUG] Bill found: BILL2025P000018 with amount_payable: 300.00
+[2025-10-04 08:13:41] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 300
+[2025-10-04 08:13:53] [INFO] Payment recorded: GHS 100 for Beatrice Akueteh (PROP-NZ02-RA01-00002) via Cash by user admin
+[2025-10-04 10:03:28] [INFO] Business created: Auntie Bee Shop (ID: 36, Account: BIZ-CZ01-GA02-0001) by user Joojo
+[2025-10-04 10:07:41] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0001, Type: Business
+[2025-10-04 10:07:41] [DEBUG] Business found: Auntie Bee Shop
+[2025-10-04 10:07:41] [DEBUG] Bill found: BILL2025B000036 with amount_payable: 700.00
+[2025-10-04 10:07:41] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 700
+[2025-10-04 10:07:53] [INFO] Payment recorded: GHS 100 for Auntie Bee Shop (BIZ-CZ01-GA02-0001) via Cash by user Joojo
+[2026-02-03 10:11:12] [DEBUG] Account search attempt - Number: BIZ-CZ01-GA02-0001, Type: Business
+[2026-02-03 10:11:12] [DEBUG] Business found: Auntie Bee Shop
+[2026-02-03 10:11:12] [DEBUG] Bill found: BILL2026B000036 with amount_payable: 1300.00
+[2026-02-03 10:11:12] [DEBUG] Account search successful with valid bill. Remaining balance: GHS 1300
+[2026-02-03 10:11:27] [INFO] Payment recorded: GHS 300 for Auntie Bee Shop (BIZ-CZ01-GA02-0001) via Cash by user Joojo

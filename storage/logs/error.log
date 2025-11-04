@@ -9329,3 +9329,67 @@ Stack trace:
 [15-Sep-2025 20:28:27 Africa/Accra] PHP Warning:  Undefined array key "revenue" in C:\xampp\htdocs\quickbill_360_jsk\index.php on line 1725
 [15-Sep-2025 20:28:27 Africa/Accra] PHP Warning:  Undefined array key "revenue" in C:\xampp\htdocs\quickbill_360_jsk\index.php on line 1725
 [15-Sep-2025 20:35:04 Africa/Accra] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\quickbill_360_jsk\admin\settings\restrictions.php on line 1606
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] Database Execute Error: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+[17-Sep-2025 19:41:02 Africa/Accra] PHP Fatal error:  Uncaught TypeError: count(): Argument #1 ($value) must be of type Countable|array, bool given in C:\xampp\htdocs\quickbill_360_jsk\index.php:177
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\quickbill_360_jsk\index.php on line 177
+[17-Sep-2025 19:41:07 Africa/Accra] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[21-Sep-2025 12:54:26 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\admin\billing\reports.php on line 968
+[21-Sep-2025 12:54:26 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\admin\billing\reports.php on line 968
+[30-Sep-2025 14:37:52 Africa/Accra] PHP Warning:  Undefined array key "finding_title" in C:\xampp\htdocs\quickbill_360_jsk\internal_auditor\findings.php on line 46
+[30-Sep-2025 14:37:52 Africa/Accra] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\includes\functions.php on line 19
+[30-Sep-2025 14:37:52 Africa/Accra] PHP Warning:  Undefined array key "severity" in C:\xampp\htdocs\quickbill_360_jsk\internal_auditor\findings.php on line 47
+[30-Sep-2025 14:37:52 Africa/Accra] PHP Deprecated:  trim(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\includes\functions.php on line 19
+[01-Oct-2025 05:36:24 Africa/Accra] PHP Fatal error:  Uncaught Error: Call to undefined method Database::fetchOne() in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php:152
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php on line 152
+[01-Oct-2025 05:43:22 Africa/Accra] PHP Fatal error:  Uncaught Error: Call to undefined method Database::query() in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php:206
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php on line 206
+[01-Oct-2025 05:43:37 Africa/Accra] PHP Fatal error:  Uncaught Error: Call to undefined method Database::query() in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php:206
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\add.php on line 206
+[01-Oct-2025 06:00:15 Africa/Accra] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[01-Oct-2025 06:27:36 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\edit.php on line 1989
+[01-Oct-2025 06:27:36 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\edit.php on line 1996
+[01-Oct-2025 10:44:13 Africa/Accra] Database Execute Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'account_number' in 'field list'
+[01-Oct-2025 10:48:34 Africa/Accra] PHP Warning:  Undefined array key "status" in C:\xampp\htdocs\quickbill_360_jsk\data_collector\properties\edit.php on line 243
+[01-Oct-2025 10:53:45 Africa/Accra] PHP Warning:  Undefined variable $structures_data in C:\xampp\htdocs\quickbill_360_jsk\data_collector\properties\add.php on line 1666
+[01-Oct-2025 10:53:45 Africa/Accra] PHP Warning:  foreach() argument must be of type array|object, null given in C:\xampp\htdocs\quickbill_360_jsk\data_collector\properties\add.php on line 1666
+[01-Oct-2025 10:53:45 Africa/Accra] PHP Warning:  Undefined variable $structures_data in C:\xampp\htdocs\quickbill_360_jsk\data_collector\properties\add.php on line 2613
+[01-Oct-2025 10:53:45 Africa/Accra] PHP Warning:  Undefined variable $sub_zones_data in C:\xampp\htdocs\quickbill_360_jsk\data_collector\properties\add.php on line 2614
+[01-Oct-2025 10:55:10 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\admin\properties\edit.php on line 2110
+[01-Oct-2025 11:42:41 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\add.php on line 173
+[01-Oct-2025 11:42:41 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\add.php on line 186
+[01-Oct-2025 11:42:41 Africa/Accra] Database Execute Error: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'user_id' cannot be null
+[01-Oct-2025 11:50:45 Africa/Accra] PHP Warning:  Undefined array key "type" in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\index.php on line 1189
+[01-Oct-2025 11:50:45 Africa/Accra] PHP Warning:  Undefined array key "type" in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\index.php on line 1190
+[01-Oct-2025 11:50:45 Africa/Accra] PHP Warning:  Undefined array key "message" in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\index.php on line 1191
+[01-Oct-2025 11:50:45 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\officer\properties\index.php on line 1191
+[01-Oct-2025 11:52:43 Africa/Accra] Database Execute Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'business_number' in 'field list'
+[02-Oct-2025 14:28:37 Africa/Accra] PHP Warning:  Undefined variable $remainingBalance in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\view.php on line 2205
+[02-Oct-2025 14:46:48 Africa/Accra] PHP Warning:  Undefined variable $remainingBalance in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\view.php on line 2205
+[02-Oct-2025 19:15:09 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\edit.php on line 1919
+[02-Oct-2025 19:15:09 Africa/Accra] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\quickbill_360_jsk\admin\businesses\edit.php on line 2106
+[03-Oct-2025 03:27:42 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\officer\billing\index.php on line 1058
+[03-Oct-2025 03:28:14 Africa/Accra] PHP Warning:  Undefined array key "id" in C:\xampp\htdocs\quickbill_360_jsk\officer\billing\index.php on line 1058
+[03-Oct-2025 13:24:33 Africa/Accra] Database Connection Error: SQLSTATE[HY000] [1049] Unknown database 'quickbill_360'
+[04-Oct-2025 09:21:29 Africa/Accra] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\quickbill_360_jsk\admin\settings\restrictions.php on line 1606
+[11-Oct-2025 19:27:44 Africa/Accra] PHP Warning:  Trying to access array offset on value of type bool in C:\xampp\htdocs\quickbill_360_jsk\admin\settings\restrictions.php on line 1606
+[11-Oct-2025 20:08:12 Africa/Accra] PHP Fatal error:  Uncaught Error: Call to undefined function isAdmin() in C:\xampp\htdocs\quickbill_360_jsk\admin\index.php:36
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\quickbill_360_jsk\admin\index.php on line 36
+[04-Nov-2025 12:01:15 Africa/Accra] Database Connection Error: SQLSTATE[HY000] [1049] Unknown database 'quickbill 360'

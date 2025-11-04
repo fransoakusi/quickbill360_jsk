@@ -1,6 +1,6 @@
 <?php
 /**
- * Bulk Notifications with Push Notification Support
+ * Bulk Notifications with Push Notification Support and Arkesel SMS API
  * QUICKBILL 305 - Send bulk notifications via SMS, System, and Push
  */
 
@@ -44,11 +44,170 @@ $userDisplayName = getUserDisplayName($currentUser);
 $db = new Database();
 $fcmService = new FCMService($db);
 
+/**
+ * Arkesel SMS Service Class
+ */
+class ArkeselService {
+    private $apiKey;
+    private $apiUrl = 'https://sms.arkesel.com/api/v2/sms/send';
+    private $senderId = 'QuickBill'; // Default sender ID
+    
+    public function __construct($apiKey, $senderId = null) {
+        $this->apiKey = $apiKey;
+        if ($senderId) {
+            $this->senderId = $senderId;
+        }
+    }
+    
+    /**
+     * Send SMS using Arkesel API
+     */
+    public function sendSMS($to, $message) {
+        try {
+            // Clean phone number
+            $phone = $this->cleanPhoneNumber($to);
+            if (!$phone) {
+                return ['success' => false, 'error' => 'Invalid phone number'];
+            }
+            
+            $postData = [
+                'sender' => $this->senderId,
+                'message' => $message,
+                'recipients' => [$phone],
+                'sandbox' => false // Set to true for testing
+            ];
+            
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $this->apiUrl,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($postData),
+                CURLOPT_HTTPHEADER => [
+                    'api-key: ' . $this->apiKey,
+                    'Content-Type: application/json',
+                    'Accept: application/json'
+                ],
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_SSL_VERIFYPEER => true
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            if ($error) {
+                error_log("Arkesel cURL Error: " . $error);
+                return ['success' => false, 'error' => 'Network error: ' . $error];
+            }
+            
+            $responseData = json_decode($response, true);
+            
+            if ($httpCode === 200 && $responseData) {
+                if (isset($responseData['status']) && $responseData['status'] === 'success') {
+                    return [
+                        'success' => true, 
+                        'message_id' => $responseData['data']['id'] ?? null,
+                        'cost' => $responseData['data']['cost'] ?? null
+                    ];
+                } else {
+                    $errorMsg = $responseData['message'] ?? 'Unknown error from Arkesel';
+                    return ['success' => false, 'error' => $errorMsg];
+                }
+            } else {
+                error_log("Arkesel HTTP Error: Code $httpCode, Response: $response");
+                return ['success' => false, 'error' => "HTTP Error: $httpCode"];
+            }
+            
+        } catch (Exception $e) {
+            error_log("Arkesel Exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Clean and validate phone number
+     */
+    private function cleanPhoneNumber($phone) {
+        // Remove all non-numeric characters
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        
+        // Handle Ghana phone numbers
+        if (strlen($phone) == 10 && substr($phone, 0, 1) == '0') {
+            $phone = '233' . substr($phone, 1); // Remove leading 0 and add country code
+        } elseif (strlen($phone) == 9) {
+            $phone = '233' . $phone; // Add country code
+        } elseif (strlen($phone) == 12 && substr($phone, 0, 3) == '233') {
+            // Already has country code
+        } else {
+            return false; // Invalid format
+        }
+        
+        return $phone;
+    }
+    
+    /**
+     * Check account balance
+     */
+    public function getBalance() {
+        try {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://sms.arkesel.com/api/v2/clients/balance-details',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'api-key: ' . $this->apiKey,
+                    'Accept: application/json'
+                ],
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => true
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($httpCode === 200) {
+                $data = json_decode($response, true);
+                return $data['data'] ?? null;
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+}
+
+// Initialize Arkesel service
+$arkeselService = new ArkeselService('RW1PU2xKZmltUFNrY3lrVXlUZ24', 'QuickBill');
+
+// Default message templates
+$defaultMessages = [
+    'payment_reminder' => "Dear {name}, your QuickBill payment of GHS {amount} is due. Account: {account_number}. Please visit our office or pay online. Thank you - Jasikan Municipal Assembly",
+    
+    'overdue_notice' => "OVERDUE NOTICE: Dear {name}, your payment of GHS {amount} for account {account_number} is overdue. Please settle immediately to avoid penalties. - Jasikan Municipal Assembly",
+    
+    'general_announcement' => "Dear {name}, this is an important announcement from Jasikan Municipal Assembly. Please check your account status and ensure all payments are up to date. Thank you.",
+    
+    'bill_ready' => "Dear {name}, your new QuickBill for GHS {amount} is ready. Account: {account_number}. Visit our office or pay online. - Jasikan Municipal Assembly",
+    
+    'payment_received' => "Dear {name}, we have received your payment of GHS {amount} for account {account_number}. Thank you for your prompt payment. - Jasikan Municipal Assembly",
+    
+    'office_closure' => "Dear valued customers, our offices will be closed on {date} for {reason}. Emergency services remain available. - Jasikan Municipal Assembly",
+    
+    'system_maintenance' => "Dear customers, our online payment system will be under maintenance from {start_time} to {end_time} on {date}. We apologize for any inconvenience. - Jasikan Municipal Assembly",
+    
+    'new_service' => "Dear customers, we are pleased to announce {service_name}. This new service will help improve your experience with us. Contact us for more details. - Jasikan Municipal Assembly"
+];
+
 // Handle form submission
 $message = '';
 $messageType = '';
 $recipientPreview = [];
 $sendResults = null;
+$selectedTemplate = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -56,6 +215,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'preview') {
         // Generate recipient preview
         $recipientPreview = generateRecipientList($_POST);
+    } elseif ($action === 'load_template') {
+        // Load selected template
+        $templateKey = $_POST['message_template'] ?? '';
+        if (isset($defaultMessages[$templateKey])) {
+            $selectedTemplate = $defaultMessages[$templateKey];
+        }
     } elseif ($action === 'send') {
         // Send bulk notifications
         try {
@@ -74,6 +239,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (count($recipients) > 500) {
                 throw new Exception('Too many recipients. Maximum 500 allowed per batch.');
+            }
+            
+            // Check Arkesel balance for SMS notifications
+            if (in_array($notificationType, ['SMS', 'All'])) {
+                $balance = $arkeselService->getBalance();
+                $estimatedCost = count($recipients) * 0.05; // Approximate cost per SMS
+                
+                if ($balance && isset($balance['balance']) && $balance['balance'] < $estimatedCost) {
+                    throw new Exception('Insufficient SMS balance. Current balance: GHS ' . number_format($balance['balance'], 2));
+                }
             }
             
             $sendResults = sendBulkNotifications($recipients, $messageText, $notificationType, $subject, $currentUser['user_id']);
@@ -105,14 +280,17 @@ function sendBulkNotifications($recipients, $messageText, $notificationType, $su
     
     foreach ($recipients as $recipient) {
         try {
+            // Personalize message
+            $personalizedMessage = personalizeMessage($messageText, $recipient);
+            
             // Create notification record in database
             $sql = "INSERT INTO notifications (recipient_type, recipient_id, notification_type, subject, message, status, sent_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $params = [
                 $recipient['type'],
                 $recipient['id'],
                 $notificationType,
-                $subject ?: 'Bulk Notification',
-                $messageText,
+                $subject ?: 'QuickBill Notification',
+                $personalizedMessage,
                 'Pending',
                 $sentBy,
                 date('Y-m-d H:i:s')
@@ -130,11 +308,11 @@ function sendBulkNotifications($recipients, $messageText, $notificationType, $su
             
             switch ($notificationType) {
                 case 'Push':
-                    $sendResult = sendPushNotification($recipient, $subject, $messageText);
+                    $sendResult = sendPushNotification($recipient, $subject, $personalizedMessage);
                     break;
                     
                 case 'SMS':
-                    $sendResult = sendSMSNotification($recipient, $messageText);
+                    $sendResult = sendSMSNotification($recipient, $personalizedMessage);
                     break;
                     
                 case 'System':
@@ -144,8 +322,8 @@ function sendBulkNotifications($recipients, $messageText, $notificationType, $su
                     
                 case 'All':
                     // Send both push and SMS
-                    $pushResult = sendPushNotification($recipient, $subject, $messageText);
-                    $smsResult = sendSMSNotification($recipient, $messageText);
+                    $pushResult = sendPushNotification($recipient, $subject, $personalizedMessage);
+                    $smsResult = sendSMSNotification($recipient, $personalizedMessage);
                     $sendResult = ['success' => $pushResult['success'] || $smsResult['success']];
                     break;
                     
@@ -195,6 +373,23 @@ function sendBulkNotifications($recipients, $messageText, $notificationType, $su
 }
 
 /**
+ * Personalize message with recipient data
+ */
+function personalizeMessage($message, $recipient) {
+    $replacements = [
+        '{name}' => $recipient['name'] ?? 'Valued Customer',
+        '{account_number}' => $recipient['account_number'] ?? '',
+        '{amount}' => isset($recipient['amount_payable']) ? number_format($recipient['amount_payable'], 2) : '0.00',
+        '{phone}' => $recipient['phone'] ?? '',
+        '{type}' => ucfirst($recipient['type'] ?? ''),
+        '{date}' => date('d/m/Y'),
+        '{time}' => date('h:i A')
+    ];
+    
+    return str_replace(array_keys($replacements), array_values($replacements), $message);
+}
+
+/**
  * Send push notification
  */
 function sendPushNotification($recipient, $subject, $message) {
@@ -233,31 +428,19 @@ function sendPushNotification($recipient, $subject, $message) {
 }
 
 /**
- * Send SMS notification (placeholder - implement with your SMS provider)
+ * Send SMS notification using Arkesel API
  */
 function sendSMSNotification($recipient, $message) {
+    global $arkeselService;
+    
     // Check if recipient has phone number
     if (empty($recipient['phone'])) {
         return ['success' => false, 'error' => 'No phone number available'];
     }
     
     try {
-        // TODO: Implement actual SMS sending with Twilio, etc.
-        // For now, simulate with 90% success rate
-        $success = (rand(1, 10) !== 1);
-        
-        if ($success) {
-            return ['success' => true];
-        } else {
-            return ['success' => false, 'error' => 'SMS service unavailable'];
-        }
-        
-        // Example Twilio implementation:
-        /*
-        $twilio = new TwilioService();
-        $result = $twilio->sendSMS($recipient['phone'], $message);
+        $result = $arkeselService->sendSMS($recipient['phone'], $message);
         return $result;
-        */
         
     } catch (Exception $e) {
         error_log("SMS notification error: " . $e->getMessage());
@@ -279,7 +462,7 @@ function generateRecipientList($formData) {
             case 'all_defaulters':
                 // All businesses and properties with outstanding amounts
                 $businesses = $db->fetchAll("
-                    SELECT business_id as id, business_name as name, telephone as phone, 'Business' as type, amount_payable
+                    SELECT business_id as id, business_name as name, account_number, telephone as phone, 'Business' as type, amount_payable
                     FROM businesses 
                     WHERE amount_payable > 0 AND status = 'Active'
                     ORDER BY business_name
@@ -287,7 +470,7 @@ function generateRecipientList($formData) {
                 ");
                 
                 $properties = $db->fetchAll("
-                    SELECT property_id as id, owner_name as name, telephone as phone, 'Property' as type, amount_payable
+                    SELECT property_id as id, owner_name as name, property_number as account_number, telephone as phone, 'Property' as type, amount_payable
                     FROM properties 
                     WHERE amount_payable > 0
                     ORDER BY owner_name
@@ -299,7 +482,7 @@ function generateRecipientList($formData) {
                 
             case 'business_defaulters':
                 $recipients = $db->fetchAll("
-                    SELECT business_id as id, business_name as name, telephone as phone, 'Business' as type, amount_payable
+                    SELECT business_id as id, business_name as name, account_number, telephone as phone, 'Business' as type, amount_payable
                     FROM businesses 
                     WHERE amount_payable > 0 AND status = 'Active'
                     ORDER BY business_name
@@ -309,7 +492,7 @@ function generateRecipientList($formData) {
                 
             case 'property_defaulters':
                 $recipients = $db->fetchAll("
-                    SELECT property_id as id, owner_name as name, telephone as phone, 'Property' as type, amount_payable
+                    SELECT property_id as id, owner_name as name, property_number as account_number, telephone as phone, 'Property' as type, amount_payable
                     FROM properties 
                     WHERE amount_payable > 0
                     ORDER BY owner_name
@@ -321,7 +504,7 @@ function generateRecipientList($formData) {
                 $zoneId = (int)($formData['zone_id'] ?? 0);
                 if ($zoneId > 0) {
                     $businesses = $db->fetchAll("
-                        SELECT business_id as id, business_name as name, telephone as phone, 'Business' as type
+                        SELECT business_id as id, business_name as name, account_number, telephone as phone, 'Business' as type, amount_payable
                         FROM businesses 
                         WHERE zone_id = ? AND status = 'Active'
                         ORDER BY business_name
@@ -329,7 +512,7 @@ function generateRecipientList($formData) {
                     ", [$zoneId]);
                     
                     $properties = $db->fetchAll("
-                        SELECT property_id as id, owner_name as name, telephone as phone, 'Property' as type
+                        SELECT property_id as id, owner_name as name, property_number as account_number, telephone as phone, 'Property' as type, amount_payable
                         FROM properties 
                         WHERE zone_id = ?
                         ORDER BY owner_name
@@ -344,7 +527,7 @@ function generateRecipientList($formData) {
                 $businessType = $formData['business_type'] ?? '';
                 if (!empty($businessType)) {
                     $recipients = $db->fetchAll("
-                        SELECT business_id as id, business_name as name, telephone as phone, 'Business' as type
+                        SELECT business_id as id, business_name as name, account_number, telephone as phone, 'Business' as type, amount_payable
                         FROM businesses 
                         WHERE business_type = ? AND status = 'Active'
                         ORDER BY business_name
@@ -355,7 +538,7 @@ function generateRecipientList($formData) {
                 
             case 'all_businesses':
                 $recipients = $db->fetchAll("
-                    SELECT business_id as id, business_name as name, telephone as phone, 'Business' as type
+                    SELECT business_id as id, business_name as name, account_number, telephone as phone, 'Business' as type, amount_payable
                     FROM businesses 
                     WHERE status = 'Active'
                     ORDER BY business_name
@@ -365,7 +548,7 @@ function generateRecipientList($formData) {
                 
             case 'all_properties':
                 $recipients = $db->fetchAll("
-                    SELECT property_id as id, owner_name as name, telephone as phone, 'Property' as type
+                    SELECT property_id as id, owner_name as name, property_number as account_number, telephone as phone, 'Property' as type, amount_payable
                     FROM properties 
                     ORDER BY owner_name
                     LIMIT 300
@@ -374,7 +557,7 @@ function generateRecipientList($formData) {
                 
             case 'all_users':
                 $recipients = $db->fetchAll("
-                    SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, phone, 'User' as type
+                    SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, '' as account_number, phone, 'User' as type, 0 as amount_payable
                     FROM users 
                     WHERE is_active = 1
                     ORDER BY first_name, last_name
@@ -425,6 +608,17 @@ try {
 } catch (Exception $e) {
     $zones = [];
     $businessTypes = [];
+}
+
+// Get Arkesel balance
+$smsBalance = null;
+try {
+    $balanceData = $arkeselService->getBalance();
+    if ($balanceData && isset($balanceData['balance'])) {
+        $smsBalance = $balanceData['balance'];
+    }
+} catch (Exception $e) {
+    // Balance check failed - continue without balance info
 }
 ?>
 <!DOCTYPE html>
@@ -737,6 +931,47 @@ try {
             border-left: 4px solid #4299e1;
         }
         
+        /* SMS Balance */
+        .sms-balance {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .balance-amount {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* Template selection */
+        .template-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .template-card:hover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        
+        .template-card.selected {
+            border-color: #667eea;
+            background-color: #ebf4ff;
+        }
+        
         /* Criteria selection */
         .criteria-card {
             border: 2px solid #e2e8f0;
@@ -982,9 +1217,22 @@ try {
                     <i class="fas fa-bell"></i> Bulk Notifications
                 </h1>
                 <p style="color: #718096; font-size: 16px;">
-                    Send push notifications, SMS, and system notifications to multiple recipients.
+                    Send push notifications, SMS, and system notifications to multiple recipients using Arkesel SMS Gateway.
                 </p>
             </div>
+
+            <!-- SMS Balance Display -->
+            <?php if ($smsBalance !== null): ?>
+                <div class="sms-balance">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <i class="fas fa-wallet" style="font-size: 24px;"></i>
+                        <div>
+                            <span class="balance-amount">GHS <?php echo number_format($smsBalance, 2); ?></span>
+                            <div class="balance-label">SMS Balance Available</div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <!-- Flash Messages -->
             <?php if (!empty($message)): ?>
@@ -1140,44 +1388,131 @@ try {
                             </div>
                         </div>
 
-                        <!-- Step 2: Compose Message -->
+                        <!-- Step 2: Choose Message Template -->
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title"><i class="fas fa-edit"></i> Step 2: Compose Message</h5>
+                                <h5 class="card-title"><i class="fas fa-file-alt"></i> Step 2: Choose Message Template</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 style="color: #e53e3e; margin-bottom: 15px; font-weight: 600;">
+                                            <i class="fas fa-money-bill-wave"></i> Payment Messages
+                                        </h6>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('payment_reminder')">
+                                            <strong>Payment Reminder</strong><br>
+                                            <small style="color: #718096;">Remind customers about due payments</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('overdue_notice')">
+                                            <strong>Overdue Notice</strong><br>
+                                            <small style="color: #718096;">Notice for overdue payments</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('bill_ready')">
+                                            <strong>New Bill Available</strong><br>
+                                            <small style="color: #718096;">Notify about new bills</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('payment_received')">
+                                            <strong>Payment Received</strong><br>
+                                            <small style="color: #718096;">Confirm payment receipt</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6 style="color: #4299e1; margin-bottom: 15px; font-weight: 600;">
+                                            <i class="fas fa-info-circle"></i> General Messages
+                                        </h6>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('general_announcement')">
+                                            <strong>General Announcement</strong><br>
+                                            <small style="color: #718096;">General information to customers</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('office_closure')">
+                                            <strong>Office Closure Notice</strong><br>
+                                            <small style="color: #718096;">Inform about office closures</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('system_maintenance')">
+                                            <strong>System Maintenance</strong><br>
+                                            <small style="color: #718096;">System maintenance notifications</small>
+                                        </div>
+                                        
+                                        <div class="template-card" onclick="loadTemplate('new_service')">
+                                            <strong>New Service</strong><br>
+                                            <small style="color: #718096;">Announce new services</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <input type="hidden" name="message_template" id="selectedTemplate" value="">
+                                
+                                <div style="margin-top: 15px;">
+                                    <button type="submit" name="action" value="load_template" class="action-btn info" id="loadTemplateBtn" disabled>
+                                        <i class="fas fa-download"></i> Load Selected Template
+                                    </button>
+                                    <small style="margin-left: 15px; color: #718096;">
+                                        Or skip to write your own custom message below
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Compose Message -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="fas fa-edit"></i> Step 3: Compose Message</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label class="form-label">Notification Type</label>
                                         <select name="notification_type" class="form-select" id="notificationType">
-                                            <option value="Push">Push Notification</option>
-                                            <option value="SMS">SMS</option>
-                                            <option value="System">System Notification</option>
-                                            <option value="All">Push + SMS</option>
+                                            <option value="SMS">SMS Only</option>
+                                            <option value="Push">Push Notification Only</option>
+                                            <option value="System">System Notification Only</option>
+                                            <option value="All">SMS + Push Notification</option>
                                         </select>
                                         <small class="form-text text-muted">
-                                            Push notifications are sent to mobile apps with registered tokens.
+                                            SMS uses Arkesel gateway. Push notifications require mobile app registration.
                                         </small>
                                     </div>
                                     <div class="col-md-6" id="subjectField">
                                         <label class="form-label">Subject</label>
                                         <input type="text" name="subject" class="form-control" 
-                                               placeholder="Notification subject (optional)" 
+                                               placeholder="Notification subject (for push notifications)" 
                                                value="QuickBill Notification">
                                     </div>
                                 </div>
                                 
                                 <label class="form-label">Message Text *</label>
                                 <textarea name="message" id="messageText" class="form-control" rows="6" 
-                                          placeholder="Type your message here..." required></textarea>
+                                          placeholder="Type your message here or load a template above..." required><?php echo htmlspecialchars($selectedTemplate); ?></textarea>
                                 <div class="char-counter" id="charCounter">
                                     <span id="charCount">0</span> / 160 characters (1 SMS)
                                 </div>
 
+                                <div class="alert alert-info" style="margin-top: 15px;">
+                                    <h6 style="margin-bottom: 10px;">
+                                        <i class="fas fa-magic"></i> Message Personalization
+                                    </h6>
+                                    <p style="margin-bottom: 5px;">You can use these placeholders in your message:</p>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-family: monospace; font-size: 12px;">
+                                        <div><code>{name}</code> - Recipient name</div>
+                                        <div><code>{account_number}</code> - Account number</div>
+                                        <div><code>{amount}</code> - Amount payable</div>
+                                        <div><code>{date}</code> - Current date</div>
+                                        <div><code>{time}</code> - Current time</div>
+                                        <div><code>{type}</code> - Business/Property</div>
+                                    </div>
+                                </div>
+
                                 <div class="alert alert-warning" style="margin-top: 15px;">
                                     <i class="fas fa-exclamation-triangle"></i>
-                                    <strong>Important:</strong> Push notifications will be sent to users with registered mobile devices. 
-                                    SMS will be sent to recipients with valid phone numbers. Please review your message carefully.
+                                    <strong>Important:</strong> SMS will be sent via Arkesel gateway. Push notifications require users to have registered mobile devices. Please review your message carefully before sending.
                                 </div>
                             </div>
                         </div>
@@ -1210,6 +1545,12 @@ try {
                                 <?php if (!empty($recipientPreview)): ?>
                                     <div class="alert alert-info" style="margin-bottom: 15px;">
                                         <strong><?php echo count($recipientPreview); ?></strong> recipients found
+                                        <?php 
+                                        $withPhone = count(array_filter($recipientPreview, function($r) { return !empty($r['phone']); }));
+                                        if ($withPhone < count($recipientPreview)):
+                                        ?>
+                                            <br><small><?php echo $withPhone; ?> have phone numbers for SMS</small>
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <div class="recipient-preview">
@@ -1219,8 +1560,16 @@ try {
                                                     <strong><?php echo htmlspecialchars($recipient['name']); ?></strong>
                                                     <div style="font-size: 12px; color: #718096;">
                                                         <?php echo ucfirst($recipient['type']); ?>
+                                                        <?php if (!empty($recipient['account_number'])): ?>
+                                                            - <?php echo htmlspecialchars($recipient['account_number']); ?>
+                                                        <?php endif; ?>
                                                         <?php if (!empty($recipient['phone'])): ?>
-                                                            - <?php echo htmlspecialchars($recipient['phone']); ?>
+                                                            <br><i class="fas fa-phone" style="color: #48bb78;"></i> <?php echo htmlspecialchars($recipient['phone']); ?>
+                                                        <?php else: ?>
+                                                            <br><i class="fas fa-phone-slash" style="color: #e53e3e;"></i> No phone
+                                                        <?php endif; ?>
+                                                        <?php if (isset($recipient['amount_payable']) && $recipient['amount_payable'] > 0): ?>
+                                                            <br><i class="fas fa-money-bill"></i> GHS <?php echo number_format($recipient['amount_payable'], 2); ?>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -1252,6 +1601,9 @@ try {
     </div>
 
     <script>
+        // Default message templates
+        const templates = <?php echo json_encode($defaultMessages); ?>;
+        
         // Sidebar toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1267,7 +1619,23 @@ try {
             if (sidebarHidden === 'true') {
                 document.getElementById('sidebar').classList.add('hidden');
             }
+            
+            // Initialize character counter
+            updateCharCounter();
         });
+
+        // Template selection
+        function loadTemplate(templateKey) {
+            // Update UI
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.template-card').classList.add('selected');
+            
+            // Set hidden field
+            document.getElementById('selectedTemplate').value = templateKey;
+            document.getElementById('loadTemplateBtn').disabled = false;
+        }
 
         // Character counter
         function updateCharCounter() {
@@ -1293,7 +1661,6 @@ try {
 
         // Initialize character counter
         document.getElementById('messageText').addEventListener('input', updateCharCounter);
-        updateCharCounter();
 
         // Notification type change
         document.getElementById('notificationType').addEventListener('change', function() {
@@ -1333,6 +1700,12 @@ try {
         });
         updateCriteriaCards();
 
+        // Handle template loading from form submission
+        <?php if (!empty($selectedTemplate)): ?>
+            document.getElementById('messageText').value = <?php echo json_encode($selectedTemplate); ?>;
+            updateCharCounter();
+        <?php endif; ?>
+
         // Form validation
         document.getElementById('bulkForm').addEventListener('submit', function(e) {
             const action = e.submitter.value;
@@ -1359,7 +1732,17 @@ try {
                     return;
                 }
                 
-                if (!confirm(`Are you sure you want to send this bulk notification to ${recipientCount} recipients? This action cannot be undone.`)) {
+                const notificationType = document.getElementById('notificationType').value;
+                const estimatedCost = recipientCount * 0.05; // Approximate SMS cost
+                let confirmMessage = `Are you sure you want to send this bulk notification to ${recipientCount} recipients?`;
+                
+                if (notificationType === 'SMS' || notificationType === 'All') {
+                    confirmMessage += `\n\nEstimated SMS cost: GHS ${estimatedCost.toFixed(2)}`;
+                }
+                
+                confirmMessage += '\n\nThis action cannot be undone.';
+                
+                if (!confirm(confirmMessage)) {
                     e.preventDefault();
                     return;
                 }

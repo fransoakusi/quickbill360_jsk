@@ -1,6 +1,6 @@
 <?php
 /**
- * Bills by Status Report
+ * Bills by Status Report - Updated with Served Status
  * QUICKBILL 305 - Admin Panel
  */
 
@@ -51,10 +51,11 @@ $dateTo = $_GET['date_to'] ?? date('Y-m-d');
 $billType = $_GET['bill_type'] ?? '';
 $zoneId = $_GET['zone_id'] ?? '';
 $status = $_GET['status'] ?? '';
+$servedStatus = $_GET['served_status'] ?? '';
 $export = $_GET['export'] ?? '';
 
 // Export function - Define before data processing
-function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, $detailedData, $dateFrom, $dateTo, $billType, $zoneId, $status, $zones) {
+function exportBillsStatusCSV($statusSummary, $statusBreakdown, $servedSummary, $servedBreakdown, $agingAnalysis, $detailedData, $dateFrom, $dateTo, $billType, $zoneId, $status, $servedStatus, $zones) {
     // Set headers for CSV download
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="Bills_Status_Report_' . date('Y-m-d_H-i-s') . '.csv"');
@@ -84,13 +85,14 @@ function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, 
         }
         $filters[] = 'Zone: ' . $zoneName;
     }
-    if ($status) $filters[] = 'Status: ' . $status;
+    if ($status) $filters[] = 'Payment Status: ' . $status;
+    if ($servedStatus) $filters[] = 'Served Status: ' . $servedStatus;
     if (empty($filters)) $filters[] = 'None';
     fputcsv($output, [$filterInfo . implode(', ', $filters)]);
     fputcsv($output, []); // Empty line
     
-    // Status Summary Section
-    fputcsv($output, ['STATUS SUMMARY']);
+    // Payment Status Summary Section
+    fputcsv($output, ['PAYMENT STATUS SUMMARY']);
     fputcsv($output, ['Status', 'Bills Count', 'Total Amount (GHS)', 'Average Amount (GHS)', 'Min Amount (GHS)', 'Max Amount (GHS)', 'Percentage of Total']);
     
     $totalAmount = array_sum(array_column($statusSummary, 'total_amount'));
@@ -108,13 +110,48 @@ function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, 
     }
     fputcsv($output, []); // Empty line
     
-    // Status Breakdown by Bill Type
+    // Served Status Summary Section
+    if (!empty($servedSummary)) {
+        fputcsv($output, ['SERVED STATUS SUMMARY']);
+        fputcsv($output, ['Served Status', 'Bills Count', 'Total Amount (GHS)', 'Average Amount (GHS)', 'Percentage of Total']);
+        
+        $totalServedAmount = array_sum(array_column($servedSummary, 'total_amount'));
+        foreach ($servedSummary as $servedData) {
+            $percentage = $totalServedAmount > 0 ? round(($servedData['total_amount'] / $totalServedAmount) * 100, 2) : 0;
+            fputcsv($output, [
+                $servedData['served_status'],
+                number_format($servedData['bills_count']),
+                number_format($servedData['total_amount'], 2),
+                number_format($servedData['average_amount'], 2),
+                $percentage . '%'
+            ]);
+        }
+        fputcsv($output, []); // Empty line
+    }
+    
+    // Payment Status Breakdown by Bill Type
     if (!empty($statusBreakdown)) {
-        fputcsv($output, ['STATUS BREAKDOWN BY BILL TYPE']);
-        fputcsv($output, ['Status', 'Bill Type', 'Bills Count', 'Total Amount (GHS)', 'Average Amount (GHS)']);
+        fputcsv($output, ['PAYMENT STATUS BREAKDOWN BY BILL TYPE']);
+        fputcsv($output, ['Payment Status', 'Bill Type', 'Bills Count', 'Total Amount (GHS)', 'Average Amount (GHS)']);
         foreach ($statusBreakdown as $breakdown) {
             fputcsv($output, [
                 $breakdown['status'],
+                $breakdown['bill_type'],
+                number_format($breakdown['bills_count']),
+                number_format($breakdown['total_amount'], 2),
+                number_format($breakdown['average_amount'], 2)
+            ]);
+        }
+        fputcsv($output, []); // Empty line
+    }
+    
+    // Served Status Breakdown by Bill Type
+    if (!empty($servedBreakdown)) {
+        fputcsv($output, ['SERVED STATUS BREAKDOWN BY BILL TYPE']);
+        fputcsv($output, ['Served Status', 'Bill Type', 'Bills Count', 'Total Amount (GHS)', 'Average Amount (GHS)']);
+        foreach ($servedBreakdown as $breakdown) {
+            fputcsv($output, [
+                $breakdown['served_status'],
                 $breakdown['bill_type'],
                 number_format($breakdown['bills_count']),
                 number_format($breakdown['total_amount'], 2),
@@ -144,8 +181,9 @@ function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, 
         fputcsv($output, ['DETAILED BILL STATUS DATA']);
         fputcsv($output, [
             'Bill Number', 'Payer Name', 'Account Number', 'Bill Type', 'Zone', 
-            'Amount Payable (GHS)', 'Total Paid (GHS)', 'Balance (GHS)', 'Status', 
-            'Age (Days)', 'Generated Date', 'Payment Count', 'Last Payment Date'
+            'Amount Payable (GHS)', 'Total Paid (GHS)', 'Balance (GHS)', 'Payment Status', 
+            'Served Status', 'Served By', 'Served Date', 'Age (Days)', 'Generated Date', 
+            'Payment Count', 'Last Payment Date'
         ]);
         
         foreach ($detailedData as $data) {
@@ -160,6 +198,9 @@ function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, 
                 number_format($data['total_paid'], 2),
                 number_format($balance, 2),
                 $data['status'],
+                $data['served_status'],
+                $data['served_by_name'] ?? 'N/A',
+                $data['served_at'] ? date('M j, Y', strtotime($data['served_at'])) : 'N/A',
                 $data['age_days'],
                 date('M j, Y', strtotime($data['generated_at'])),
                 $data['payment_count'],
@@ -175,6 +216,8 @@ function exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, 
 // Initialize variables
 $statusSummary = [];
 $statusBreakdown = [];
+$servedSummary = [];
+$servedBreakdown = [];
 $agingAnalysis = [];
 $detailedData = [];
 $zones = [];
@@ -215,9 +258,14 @@ try {
         $params[] = $status;
     }
     
+    if ($servedStatus) {
+        $whereConditions[] = "b.served_status = ?";
+        $params[] = $servedStatus;
+    }
+    
     $whereClause = implode(' AND ', $whereConditions);
     
-    // Get status summary
+    // Get payment status summary
     $statusSummary = $db->fetchAll("
         SELECT 
             b.status,
@@ -234,7 +282,31 @@ try {
         ORDER BY total_amount DESC
     ", $params);
     
-    // Get status breakdown by bill type
+    // Get served status summary
+    $servedSummary = $db->fetchAll("
+        SELECT 
+            b.served_status,
+            COUNT(*) as bills_count,
+            SUM(b.amount_payable) as total_amount,
+            AVG(b.amount_payable) as average_amount,
+            MIN(b.amount_payable) as min_amount,
+            MAX(b.amount_payable) as max_amount
+        FROM bills b
+        LEFT JOIN businesses bs ON b.bill_type = 'Business' AND b.reference_id = bs.business_id
+        LEFT JOIN properties pr ON b.bill_type = 'Property' AND b.reference_id = pr.property_id
+        WHERE $whereClause
+        GROUP BY b.served_status
+        ORDER BY 
+            CASE b.served_status
+                WHEN 'Served' THEN 1
+                WHEN 'Attempted' THEN 2
+                WHEN 'Not Served' THEN 3
+                WHEN 'Returned' THEN 4
+                ELSE 5
+            END
+    ", $params);
+    
+    // Get payment status breakdown by bill type
     $statusBreakdown = $db->fetchAll("
         SELECT 
             b.status,
@@ -248,6 +320,30 @@ try {
         WHERE $whereClause
         GROUP BY b.status, b.bill_type
         ORDER BY b.status, total_amount DESC
+    ", $params);
+    
+    // Get served status breakdown by bill type
+    $servedBreakdown = $db->fetchAll("
+        SELECT 
+            b.served_status,
+            b.bill_type,
+            COUNT(*) as bills_count,
+            SUM(b.amount_payable) as total_amount,
+            AVG(b.amount_payable) as average_amount
+        FROM bills b
+        LEFT JOIN businesses bs ON b.bill_type = 'Business' AND b.reference_id = bs.business_id
+        LEFT JOIN properties pr ON b.bill_type = 'Property' AND b.reference_id = pr.property_id
+        WHERE $whereClause
+        GROUP BY b.served_status, b.bill_type
+        ORDER BY 
+            CASE b.served_status
+                WHEN 'Served' THEN 1
+                WHEN 'Attempted' THEN 2
+                WHEN 'Not Served' THEN 3
+                WHEN 'Returned' THEN 4
+                ELSE 5
+            END,
+            total_amount DESC
     ", $params);
     
     // Get aging analysis for pending bills
@@ -278,12 +374,14 @@ try {
             END
     ", $params);
     
-    // Get detailed data with payment information
+    // Get detailed data with payment and served information
     $detailedData = $db->fetchAll("
         SELECT 
             b.bill_number,
             b.bill_type,
             b.status,
+            b.served_status,
+            b.served_at,
             b.amount_payable,
             b.generated_at,
             DATEDIFF(NOW(), b.generated_at) as age_days,
@@ -296,6 +394,7 @@ try {
                 WHEN b.bill_type = 'Property' THEN pr.property_number
             END as account_number,
             z.zone_name,
+            CONCAT(served_user.first_name, ' ', served_user.last_name) as served_by_name,
             COALESCE(SUM(p.amount_paid), 0) as total_paid,
             COUNT(p.payment_id) as payment_count,
             MAX(p.payment_date) as last_payment_date
@@ -306,6 +405,7 @@ try {
             (b.bill_type = 'Business' AND bs.zone_id = z.zone_id) OR
             (b.bill_type = 'Property' AND pr.zone_id = z.zone_id)
         )
+        LEFT JOIN users served_user ON b.served_by = served_user.user_id
         LEFT JOIN payments p ON b.bill_id = p.bill_id AND p.payment_status = 'Successful'
         WHERE $whereClause
         GROUP BY b.bill_id
@@ -315,6 +415,12 @@ try {
                 WHEN 'Pending' THEN 2
                 WHEN 'Partially Paid' THEN 3
                 WHEN 'Paid' THEN 4
+            END,
+            CASE b.served_status
+                WHEN 'Not Served' THEN 1
+                WHEN 'Attempted' THEN 2
+                WHEN 'Returned' THEN 3
+                WHEN 'Served' THEN 4
             END,
             b.generated_at DESC
         LIMIT 200
@@ -334,7 +440,7 @@ try {
 
 // Handle Export Request - This MUST come after all data is loaded
 if ($export === 'excel' || $export === 'csv') {
-    exportBillsStatusCSV($statusSummary, $statusBreakdown, $agingAnalysis, $detailedData, $dateFrom, $dateTo, $billType, $zoneId, $status, $zones);
+    exportBillsStatusCSV($statusSummary, $statusBreakdown, $servedSummary, $servedBreakdown, $agingAnalysis, $detailedData, $dateFrom, $dateTo, $billType, $zoneId, $status, $servedStatus, $zones);
 }
 
 // Get flash messages
@@ -352,8 +458,8 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Local Chart.js -->
+    <script src="../../assets/js/chart.min.js"></script>
     
     <style>
         * {
@@ -384,6 +490,8 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
         .icon-check::before { content: "✅"; }
         .icon-warning::before { content: "⚠️"; }
         .icon-pending::before { content: "⏳"; }
+        .icon-delivery::before { content: "🚚"; }
+        .icon-mail::before { content: "📧"; }
         
         /* Top Navigation */
         .top-nav {
@@ -657,6 +765,22 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
             border-left: 4px solid #ef4444;
         }
         
+        .status-card.served {
+            border-left: 4px solid #10b981;
+        }
+        
+        .status-card.notserved {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .status-card.attempted {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .status-card.returned {
+            border-left: 4px solid #8b5cf6;
+        }
+        
         .status-header {
             display: flex;
             justify-content: space-between;
@@ -700,6 +824,22 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
             background: #ef4444;
         }
         
+        .status-icon.served {
+            background: #10b981;
+        }
+        
+        .status-icon.notserved {
+            background: #ef4444;
+        }
+        
+        .status-icon.attempted {
+            background: #f59e0b;
+        }
+        
+        .status-icon.returned {
+            background: #8b5cf6;
+        }
+        
         .status-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -728,6 +868,31 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
         .status-amount {
             font-family: monospace;
             color: #059669;
+        }
+        
+        /* Section Headers */
+        .section-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 10px;
+            padding: 20px 25px;
+            margin: 40px 0 30px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin: 5px 0 0 0;
         }
         
         /* Charts */
@@ -866,6 +1031,35 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
         .status-overdue {
             background: #fee2e2;
             color: #991b1b;
+        }
+        
+        .served-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .served-served {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .served-not-served {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .served-attempted {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .served-returned {
+            background: #ede9fe;
+            color: #6b21a8;
         }
         
         .bill-type-badge {
@@ -1152,7 +1346,7 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
         <div class="export-info">
             <i class="fas fa-info-circle info-icon"></i>
             <div class="info-text">
-                <strong>Export Feature:</strong> Click "Export Report" to download a comprehensive CSV file containing all bill status data, summary statistics, aging analysis, and detailed records.
+                <strong>Export Feature:</strong> Click "Export Report" to download a comprehensive CSV file containing all bill status data, summary statistics, aging analysis, served status information, and detailed records.
             </div>
         </div>
 
@@ -1167,7 +1361,7 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                     <div class="header-details">
                         <h1>Bills by Status Report</h1>
                         <div class="header-description">
-                            Comprehensive status breakdown from <?php echo date('M j, Y', strtotime($dateFrom)); ?> 
+                            Comprehensive payment and served status breakdown from <?php echo date('M j, Y', strtotime($dateFrom)); ?> 
                             to <?php echo date('M j, Y', strtotime($dateTo)); ?>
                         </div>
                     </div>
@@ -1223,13 +1417,24 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Status</label>
+                    <label class="form-label">Payment Status</label>
                     <select name="status" class="form-control">
-                        <option value="">All Status</option>
+                        <option value="">All Payment Status</option>
                         <option value="Pending" <?php echo $status === 'Pending' ? 'selected' : ''; ?>>Pending</option>
                         <option value="Paid" <?php echo $status === 'Paid' ? 'selected' : ''; ?>>Paid</option>
                         <option value="Partially Paid" <?php echo $status === 'Partially Paid' ? 'selected' : ''; ?>>Partially Paid</option>
                         <option value="Overdue" <?php echo $status === 'Overdue' ? 'selected' : ''; ?>>Overdue</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Served Status</label>
+                    <select name="served_status" class="form-control">
+                        <option value="">All Served Status</option>
+                        <option value="Served" <?php echo $servedStatus === 'Served' ? 'selected' : ''; ?>>Served</option>
+                        <option value="Not Served" <?php echo $servedStatus === 'Not Served' ? 'selected' : ''; ?>>Not Served</option>
+                        <option value="Attempted" <?php echo $servedStatus === 'Attempted' ? 'selected' : ''; ?>>Attempted</option>
+                        <option value="Returned" <?php echo $servedStatus === 'Returned' ? 'selected' : ''; ?>>Returned</option>
                     </select>
                 </div>
                 
@@ -1243,7 +1448,16 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
             </form>
         </div>
 
-        <!-- Status Summary Cards -->
+        <!-- Payment Status Summary Cards -->
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-credit-card"></i>
+                <span class="icon-receipt" style="display: none;"></span>
+                Payment Status Summary
+            </h2>
+            <p class="section-subtitle">Overview of bill payment statuses and amounts</p>
+        </div>
+        
         <div class="status-grid">
             <?php foreach ($statusSummary as $statusData): ?>
                 <div class="status-card <?php echo strtolower(str_replace(' ', '', $statusData['status'])); ?>">
@@ -1295,9 +1509,76 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
             <?php endforeach; ?>
         </div>
 
+        <!-- Served Status Summary Cards -->
+        <?php if (!empty($servedSummary)): ?>
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-truck"></i>
+                <span class="icon-delivery" style="display: none;"></span>
+                Served Status Summary
+            </h2>
+            <p class="section-subtitle">Overview of bill delivery and serving statuses</p>
+        </div>
+        
+        <div class="status-grid">
+            <?php foreach ($servedSummary as $servedData): ?>
+                <div class="status-card <?php echo strtolower(str_replace(' ', '', $servedData['served_status'])); ?>">
+                    <div class="status-header">
+                        <div class="status-title">
+                            <?php echo htmlspecialchars($servedData['served_status']); ?>
+                        </div>
+                        <div class="status-icon <?php echo strtolower(str_replace(' ', '', $servedData['served_status'])); ?>">
+                            <?php
+                            switch ($servedData['served_status']) {
+                                case 'Served':
+                                    echo '<i class="fas fa-check-circle"></i><span class="icon-check" style="display: none;"></span>';
+                                    break;
+                                case 'Not Served':
+                                    echo '<i class="fas fa-times-circle"></i><span class="icon-warning" style="display: none;"></span>';
+                                    break;
+                                case 'Attempted':
+                                    echo '<i class="fas fa-exclamation-circle"></i><span class="icon-pending" style="display: none;"></span>';
+                                    break;
+                                case 'Returned':
+                                    echo '<i class="fas fa-undo"></i><span class="icon-mail" style="display: none;"></span>';
+                                    break;
+                                default:
+                                    echo '<i class="fas fa-envelope"></i>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    
+                    <div class="status-stats">
+                        <div class="stat-item">
+                            <div class="stat-value"><?php echo number_format($servedData['bills_count']); ?></div>
+                            <div class="stat-label">Bills Count</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value status-amount">GHS <?php echo number_format($servedData['total_amount'], 2); ?></div>
+                            <div class="stat-label">Total Amount</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value status-amount">GHS <?php echo number_format($servedData['average_amount'], 2); ?></div>
+                            <div class="stat-label">Average Bill</div>
+                        </div>
+                        <div class="stat-item">
+                            <?php
+                            $totalServedAmount = array_sum(array_column($servedSummary, 'total_amount'));
+                            $percentage = $totalServedAmount > 0 ? round(($servedData['total_amount'] / $totalServedAmount) * 100, 1) : 0;
+                            ?>
+                            <div class="stat-value"><?php echo $percentage; ?>%</div>
+                            <div class="stat-label">Of Total</div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
         <!-- Charts Section -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-            <!-- Status Distribution Chart -->
+            <!-- Payment Status Distribution Chart -->
             <?php if (!empty($statusSummary)): ?>
             <div class="chart-container">
                 <div class="chart-header">
@@ -1306,14 +1587,33 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                             <i class="fas fa-chart-pie"></i>
                             <span class="icon-pie" style="display: none;"></span>
                         </div>
-                        Status Distribution by Amount
+                        Payment Status Distribution
                     </div>
                 </div>
                 <canvas id="statusDistributionChart" height="150"></canvas>
             </div>
             <?php endif; ?>
             
-            <!-- Type vs Status Chart -->
+            <!-- Served Status Distribution Chart -->
+            <?php if (!empty($servedSummary)): ?>
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-icon">
+                            <i class="fas fa-chart-pie"></i>
+                            <span class="icon-pie" style="display: none;"></span>
+                        </div>
+                        Served Status Distribution
+                    </div>
+                </div>
+                <canvas id="servedDistributionChart" height="150"></canvas>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Status by Type Charts -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+            <!-- Payment Status by Type Chart -->
             <?php if (!empty($statusBreakdown)): ?>
             <div class="chart-container">
                 <div class="chart-header">
@@ -1322,10 +1622,26 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                             <i class="fas fa-chart-bar"></i>
                             <span class="icon-chart" style="display: none;"></span>
                         </div>
-                        Status by Bill Type
+                        Payment Status by Bill Type
                     </div>
                 </div>
                 <canvas id="typeStatusChart" height="150"></canvas>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Served Status by Type Chart -->
+            <?php if (!empty($servedBreakdown)): ?>
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <div class="chart-icon">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="icon-chart" style="display: none;"></span>
+                        </div>
+                        Served Status by Bill Type
+                    </div>
+                </div>
+                <canvas id="servedTypeChart" height="150"></canvas>
             </div>
             <?php endif; ?>
         </div>
@@ -1388,7 +1704,9 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                             <th>Zone</th>
                             <th>Amount</th>
                             <th>Paid</th>
-                            <th>Status</th>
+                            <th>Payment Status</th>
+                            <th>Served Status</th>
+                            <th>Served By</th>
                             <th>Age</th>
                             <th>Generated Date</th>
                         </tr>
@@ -1413,6 +1731,19 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                                     <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $data['status'])); ?>">
                                         <?php echo htmlspecialchars($data['status']); ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <span class="served-badge served-<?php echo strtolower(str_replace(' ', '-', $data['served_status'])); ?>">
+                                        <?php echo htmlspecialchars($data['served_status']); ?>
+                                    </span>
+                                    <?php if ($data['served_at']): ?>
+                                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                            <?php echo date('M j, Y', strtotime($data['served_at'])); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <div style="font-size: 12px; font-weight: 600;"><?php echo htmlspecialchars($data['served_by_name'] ?? 'N/A'); ?></div>
                                 </td>
                                 <td>
                                     <span class="age-indicator age-<?php 
@@ -1455,7 +1786,13 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
         });
 
         function initializeCharts() {
-            // Status Distribution Chart
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.log('Chart.js not loaded from local file');
+                return;
+            }
+
+            // Payment Status Distribution Chart
             <?php if (!empty($statusSummary)): ?>
             const statusCtx = document.getElementById('statusDistributionChart').getContext('2d');
             new Chart(statusCtx, {
@@ -1487,7 +1824,39 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
             });
             <?php endif; ?>
 
-            // Type vs Status Chart
+            // Served Status Distribution Chart
+            <?php if (!empty($servedSummary)): ?>
+            const servedCtx = document.getElementById('servedDistributionChart').getContext('2d');
+            new Chart(servedCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [<?php echo "'" . implode("', '", array_column($servedSummary, 'served_status')) . "'"; ?>],
+                    datasets: [{
+                        data: [<?php echo implode(', ', array_column($servedSummary, 'total_amount')); ?>],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': GHS ' + context.parsed.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            <?php endif; ?>
+
+            // Payment Status by Type Chart
             <?php if (!empty($statusBreakdown)): ?>
             const typeStatusCtx = document.getElementById('typeStatusChart').getContext('2d');
             
@@ -1517,6 +1886,70 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                     }, {
                         label: 'Property',
                         data: propertyData,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'GHS ' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            stacked: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': GHS ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            <?php endif; ?>
+
+            // Served Status by Type Chart
+            <?php if (!empty($servedBreakdown)): ?>
+            const servedTypeCtx = document.getElementById('servedTypeChart').getContext('2d');
+            
+            // Group data by served status
+            const servedGroups = {};
+            <?php foreach ($servedBreakdown as $item): ?>
+                if (!servedGroups['<?php echo $item['served_status']; ?>']) {
+                    servedGroups['<?php echo $item['served_status']; ?>'] = { Business: 0, Property: 0 };
+                }
+                servedGroups['<?php echo $item['served_status']; ?>']['<?php echo $item['bill_type']; ?>'] = <?php echo $item['total_amount']; ?>;
+            <?php endforeach; ?>
+            
+            const servedStatuses = Object.keys(servedGroups);
+            const servedBusinessData = servedStatuses.map(status => servedGroups[status].Business || 0);
+            const servedPropertyData = servedStatuses.map(status => servedGroups[status].Property || 0);
+            
+            new Chart(servedTypeCtx, {
+                type: 'bar',
+                data: {
+                    labels: servedStatuses,
+                    datasets: [{
+                        label: 'Business',
+                        data: servedBusinessData,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1d4ed8',
+                        borderWidth: 1
+                    }, {
+                        label: 'Property',
+                        data: servedPropertyData,
                         backgroundColor: '#10b981',
                         borderColor: '#059669',
                         borderWidth: 1

@@ -1464,11 +1464,11 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                         <div class="bill-container">
                             <div class="bill-wrapper">
                                 ${includeWatermark ? `
-                                    <div class="watermark watermark-top-left">AnDA</div>
-                                    <div class="watermark watermark-center">AnDA</div>
-                                    <div class="watermark watermark-bottom-right">AnDA</div>
-                                    <div class="watermark watermark-top-right">AnDA</div>
-                                    <div class="watermark watermark-bottom-left">AnDA</div>
+                                    <div class="watermark watermark-top-left">JMA</div>
+                                    <div class="watermark watermark-center">JMA</div>
+                                    <div class="watermark watermark-bottom-right">JMA</div>
+                                    <div class="watermark watermark-top-right">JMA</div>
+                                    <div class="watermark watermark-bottom-left">JMA</div>
                                 ` : ''}
                                 
                                 <!-- Bill Header -->
@@ -1476,13 +1476,12 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                                     <img src="../../assets/images/download.png" alt="${assemblyName} Logo" class="bill-logo">
                                     <div class="bill-header-text">
                                         <h1>${assemblyName}</h1>
-                                        <p>P.O Box AW 36, Anloga</p>
-                                        <p>DA: VK-1621-0758</p>
-                                        <p>Location: opposite Anloga Post Office</p>
+                                       <p>P.O.Box 20 Jasikan</p>
+                                       <p>DA: :VJ-0008-3056</p>
                                         <h2>${billTypeTitle}</h2>
                                         <p>Bill No: ${bill.bill_number} | Bill Date: ${billDate} | Zone: ${bill.zone_name || ''}</p>
                                     </div>
-                                    <img src="../../assets/images/Anloga.jpg" alt="${assemblyName} Logo" class="bill-logo-right">
+                                    <img src="../../assets/images/jsk.jpg" alt="${assemblyName} Logo" class="bill-logo-right">
                                 </div>
 
                                 <!-- Bill Content -->
@@ -1553,7 +1552,7 @@ $flashMessage = !empty($flashMessages) ? $flashMessages[0] : null;
                                 <!-- Bill Footer -->
                                 <div class="bill-footer">
                                     <p>KINDLY pay the amount involved to the DISTRICT FINANCE OFFICER or to any Revenue Collector appointed by the Assembly ON OR BEFORE 1st of September 2025.</p>
-                                    <p>For inquiries, please call: 0249579191/0243558623/0205535222</p>
+                                    <p>For inquiries, please call: 0249982888</p>
                                 </div>
                             </div>
                         </div>

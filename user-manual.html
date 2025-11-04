@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickBill 305 - User Manual</title>
+    <title>QuickBill 360 - User Manual</title>
     <style>
         * {
             margin: 0;
@@ -338,6 +338,17 @@
             margin-top: 3rem;
         }
 
+        /* Field requirement indicators */
+        .required-field {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+
+        .optional-field {
+            color: #718096;
+            font-style: italic;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header h1 {
@@ -414,7 +425,7 @@
 <body>
     <header class="header">
         <div class="container">
-            <h1>QuickBill 305</h1>
+            <h1>QuickBill 360</h1>
             <p>Comprehensive User Manual - Billing Software for Business Operating Permits and Property Rates</p>
         </div>
     </header>
@@ -495,12 +506,12 @@
                         <p>Five distinct user roles (Super Admin, Admin, Officer, Revenue Officer, Data Collector) each with specific permissions and access levels.</p>
                     </div>
                     <div class="feature-card">
-                        <h4>Automated Billing</h4>
-                        <p>Annual bill generation with customizable schedules, automatic calculation based on fee structures, and bulk processing capabilities.</p>
+                        <h4>Intelligent Billing Automation</h4>
+                        <p>Smart bill calculation that automatically computes current bills based on business type, property structure, and room count using predefined fee structures.</p>
                     </div>
                     <div class="feature-card">
                         <h4>GPS Integration</h4>
-                        <p>Precise location capture using Google Maps API for accurate business and property location tracking.</p>
+                        <p>Precise location capture using Google Maps API with high accuracy mode, fallback options, and detailed address geocoding.</p>
                     </div>
                     <div class="feature-card">
                         <h4>Payment Processing</h4>
@@ -661,7 +672,7 @@
                         <h4>Footer Information</h4>
                         <ul>
                             <li>System version details</li>
-                            <li>Support contact information</li>
+                            <li>Support contact KabTech Consulting</li>
                             <li>Documentation links</li>
                             <li>Legal notices</li>
                         </ul>
@@ -674,58 +685,133 @@
                 <h2>Business Management</h2>
                 
                 <h3>Business Registration Process</h3>
+                <p>The business registration form is organized into three main sections: Basic Information, Location Information, and Billing Information. Follow these steps carefully:</p>
+
                 <div class="steps">
                     <div class="step">
                         <div class="step-number">1</div>
                         <div class="step-content">
                             <h5>Navigate to Add Business</h5>
-                            <p>Go to Businesses → Add New from your dashboard menu.</p>
+                            <p>Go to Businesses → Add New from your dashboard menu. You'll see a comprehensive registration form with three distinct sections.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <h5>Basic Information Entry</h5>
-                            <p>Enter business name, owner name, and contact telephone number (all required fields).</p>
+                            <h5>Basic Information Section</h5>
+                            <p><strong>Required Fields:</strong></p>
+                            <ul>
+                                <li><span class="required-field">Business Name *</span> - Official name of the business</li>
+                                <li><span class="required-field">Owner Name *</span> - Full name of the business owner</li>
+                                <li><span class="required-field">Business Type *</span> - Use the type-ahead search feature (start typing to see suggestions)</li>
+                                <li><span class="required-field">Category *</span> - Auto-populates after selecting business type</li>
+                            </ul>
+                            <p><strong>Optional Fields:</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Telephone</span> - Contact phone number (validated if provided)</li>
+                                <li><span class="optional-field">Status</span> - Defaults to "Active" (can be Active, Inactive, or Suspended)</li>
+                            </ul>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h5>Business Classification</h5>
-                            <p>Select business type using typeahead search. Category auto-populates and current bill is calculated automatically based on the fee structure.</p>
+                            <h5>Business Type and Category Selection (Type-Ahead Feature)</h5>
+                            <p><strong>How the Type-Ahead Works:</strong></p>
+                            <ul>
+                                <li>Start typing the business type in the Business Type field</li>
+                                <li>A dropdown appears showing matching business types from the database</li>
+                                <li>Use arrow keys to navigate or mouse to select</li>
+                                <li>Press Enter or click to select the business type</li>
+                                <li>The Category dropdown automatically populates with categories specific to that business type</li>
+                                <li>Select the appropriate category from the auto-populated options</li>
+                                <li>The system immediately calculates and displays the current bill amount</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <strong>Important:</strong> You must select a business type from the dropdown for the category to populate. Manual typing without selection will trigger a validation error.
+                            </div>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">4</div>
                         <div class="step-content">
-                            <h5>Location Capture</h5>
-                            <p>Click "Capture Location" button, allow GPS access, and verify location accuracy on the map.</p>
+                            <h5>Location Information Section</h5>
+                            <p><strong>Location Capture Process:</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Exact Location</span> - Enter address manually or capture via GPS</li>
+                                <li>Click "Capture GPS Location" button for automatic location capture</li>
+                                <li>Allow location access when browser prompts</li>
+                                <li>System attempts high-accuracy GPS first, then falls back to standard accuracy if needed</li>
+                                <li>GPS coordinates (latitude and longitude) are automatically populated</li>
+                                <li>Location address is reverse-geocoded to show neighborhood/area name</li>
+                                <li>Coordinates can be manually edited if needed (validated: latitude -90 to 90, longitude -180 to 180)</li>
+                            </ul>
+                            <p><strong>Zone Assignment:</strong></p>
+                            <ul>
+                                <li><span class="required-field">Zone *</span> - Select from dropdown (required)</li>
+                                <li><span class="optional-field">Sub-Zone</span> - Optional, filtered by selected zone</li>
+                            </ul>
+                            <div class="alert alert-success">
+                                <strong>GPS Tips:</strong> For best accuracy, ensure GPS is enabled, allow location access when prompted, and capture location while outdoors or near windows. The system provides detailed error messages if GPS capture fails.
+                            </div>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">5</div>
                         <div class="step-content">
-                            <h5>Zone Assignment</h5>
-                            <p>Select appropriate zone and sub-zone from dropdown menus.</p>
+                            <h5>Billing Information Section</h5>
+                            <p><strong>Automatic Calculation Fields:</strong></p>
+                            <ul>
+                                <li><strong>Current Bill</strong> - Automatically calculated based on selected business type and category (read-only field)</li>
+                                <li><strong>Amount Payable</strong> - Automatically calculated using formula: Old Bill + Arrears + Current Bill - Previous Payments (read-only field)</li>
+                            </ul>
+                            <p><strong>Manual Entry Fields (Optional):</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Old Bill</span> - Previous outstanding amount (defaults to 0.00)</li>
+                                <li><span class="optional-field">Previous Payments</span> - Amount already paid from previous bills (defaults to 0.00)</li>
+                                <li><span class="optional-field">Arrears</span> - Outstanding arrears from previous periods (defaults to 0.00)</li>
+                                <li><span class="optional-field">Batch</span> - Group identifier for batch processing</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <strong>Dynamic Fee Display:</strong> As soon as you select a business type and category, a colored panel displays the current bill amount and description, helping you verify the correct fee structure is applied.
+                            </div>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">6</div>
                         <div class="step-content">
-                            <h5>Automatic Financial Calculation</h5>
-                            <p>System automatically calculates and displays current bill amount, total payable, and account balance based on the selected business type and category.</p>
+                            <h5>Form Validation and Submission</h5>
+                            <p>Before submission, the system validates:</p>
+                            <ul>
+                                <li>All required fields have values</li>
+                                <li>Business type was selected from the dropdown (not just typed)</li>
+                                <li>Telephone format is valid (if provided)</li>
+                                <li>GPS coordinates are within valid ranges (if provided)</li>
+                                <li>Zone is selected</li>
+                                <li>Business name doesn't already exist in the database</li>
+                            </ul>
+                            <p>Click "Register Business" to save. Upon successful registration, you'll be redirected to the business profile view page.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="alert alert-success">
-                    <strong>Automatic Calculation:</strong> The system automatically determines all financial information including current bills, arrears, and total payable amounts based on business type and category selection. No manual entry of financial data is required.
+                <div class="example">
+                    <strong>Example: Restaurant Registration</strong><br>
+                    1. Type "Rest" in Business Type field<br>
+                    2. Select "Restaurant" from dropdown<br>
+                    3. Category auto-populates with options like "First Class", "Second Class"<br>
+                    4. Select "First Class"<br>
+                    5. Current Bill automatically displays: GHS 500.00<br>
+                    6. Click GPS button, allow location access<br>
+                    7. Location captured: "East Legon, Accra" with coordinates 5.614818, -0.205874<br>
+                    8. Select Zone: "East Legon Zone"<br>
+                    9. Amount Payable auto-calculates: GHS 500.00 (assuming no old bills or arrears)<br>
+                    10. Submit form
                 </div>
 
                 <h3>Account Number System</h3>
                 <div class="alert alert-info">
-                    <strong>Automatic Generation:</strong> Account numbers are automatically generated in the format BIZ000001 and cannot be modified once assigned.
+                    <strong>Automatic Generation:</strong> Account numbers are automatically generated in the format BIZ000001, BIZ000002, etc., and cannot be modified once assigned.
                 </div>
 
                 <h3>Business Profile Management</h3>
@@ -768,44 +854,148 @@
                 <h2>Property Management</h2>
                 
                 <h3>Property Registration Process</h3>
+                <p>The property registration form is organized into four main sections: Owner Information, Property Details, Location Information, and Billing Information. Follow these steps:</p>
+
                 <div class="steps">
                     <div class="step">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <h5>Owner Information</h5>
-                            <p>Enter owner name, contact details, gender, and ownership type (Self/Family/Corporate/Others).</p>
+                            <h5>Navigate to Add Property</h5>
+                            <p>Go to Properties → Add New from your dashboard menu.</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <h5>Property Details</h5>
-                            <p>Specify structure type, property type (Modern/Traditional), property use (Commercial/Residential), and number of rooms.</p>
+                            <h5>Owner Information Section</h5>
+                            <p><strong>Required Fields:</strong></p>
+                            <ul>
+                                <li><span class="required-field">Owner Name *</span> - Full name of the property owner</li>
+                            </ul>
+                            <p><strong>Optional Fields:</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Telephone</span> - Contact phone number (validated if provided)</li>
+                                <li><span class="optional-field">Gender</span> - Select from Male, Female, or Other</li>
+                                <li><span class="optional-field">Ownership Type</span> - Self (default), Family, Corporate, or Others</li>
+                            </ul>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h5>Location and Zone</h5>
-                            <p>Capture GPS location and assign to appropriate zone and sub-zone.</p>
+                            <h5>Property Details Section</h5>
+                            <p><strong>Required Fields:</strong></p>
+                            <ul>
+                                <li><span class="required-field">Structure *</span> - Select from dropdown (e.g., Modern Building, Concrete Block, Mud Block)</li>
+                                <li><span class="required-field">Property Use *</span> - Auto-populates based on structure (e.g., Residential, Commercial)</li>
+                                <li><span class="required-field">Number of Rooms *</span> - Use +/- buttons or input directly (minimum 1 room)</li>
+                            </ul>
+                            <p><strong>Optional Fields:</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Property Type</span> - Modern (default) or Traditional</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <strong>Room Counter Interface:</strong> The number of rooms field features an intuitive counter with minus (-) and plus (+) buttons. Click minus to decrease, plus to increase. Minimum value is 1 room. The current bill updates automatically as you change the room count.
+                            </div>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">4</div>
                         <div class="step-content">
-                            <h5>Automatic Financial Calculation</h5>
-                            <p>System automatically calculates current bill, total payable, and account balance based on structure type, property use, and room count. No manual financial data entry required.</p>
+                            <h5>Structure and Property Use Selection</h5>
+                            <p><strong>How It Works:</strong></p>
+                            <ul>
+                                <li>Select a Structure from the dropdown (e.g., "Modern Building")</li>
+                                <li>Property Use dropdown automatically populates with uses available for that structure</li>
+                                <li>Select the Property Use (e.g., "Residential" or "Commercial")</li>
+                                <li>System immediately calculates the fee per room based on structure + use combination</li>
+                                <li>Adjust Number of Rooms using the +/- counter</li>
+                                <li>Current Bill updates in real-time: Fee per Room × Number of Rooms</li>
+                            </ul>
+                            <div class="alert alert-success">
+                                <strong>Real-Time Calculation:</strong> As you select structure, property use, and adjust room count, the system instantly displays the calculation breakdown (e.g., "GHS 75/room × 5 rooms for Modern Building - Residential") in a dynamic fee display panel.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h5>Location Information Section</h5>
+                            <p><strong>Location Capture (Same as Business):</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Property Location</span> - Enter address manually or capture via GPS</li>
+                                <li>Click "Capture GPS Location" button</li>
+                                <li>System uses high-accuracy GPS with fallback to standard accuracy</li>
+                                <li>Coordinates auto-populate and can be manually adjusted</li>
+                                <li>Location reverse-geocoded to show specific neighborhood/area</li>
+                            </ul>
+                            <p><strong>Zone Assignment:</strong></p>
+                            <ul>
+                                <li><span class="required-field">Zone *</span> - Select from dropdown (required)</li>
+                                <li><span class="required-field">Sub-Zone *</span> - Select from dropdown (required, filtered by zone)</li>
+                            </ul>
+                            <div class="alert alert-warning">
+                                <strong>Note:</strong> Unlike business registration, BOTH zone and sub-zone are required for property registration.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <h5>Billing Information Section</h5>
+                            <p><strong>Automatic Calculation Fields:</strong></p>
+                            <ul>
+                                <li><strong>Current Bill</strong> - Automatically calculated as: Fee per Room × Number of Rooms (read-only field)</li>
+                                <li><strong>Amount Payable</strong> - Automatically calculated using formula: Old Bill + Arrears + Current Bill - Previous Payments (read-only field)</li>
+                            </ul>
+                            <p><strong>Manual Entry Fields (Optional):</strong></p>
+                            <ul>
+                                <li><span class="optional-field">Old Bill</span> - Previous outstanding amount (defaults to 0.00)</li>
+                                <li><span class="optional-field">Previous Payments</span> - Amount already paid (defaults to 0.00)</li>
+                                <li><span class="optional-field">Arrears</span> - Outstanding arrears (defaults to 0.00)</li>
+                                <li><span class="optional-field">Batch</span> - Group identifier for batch processing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">7</div>
+                        <div class="step-content">
+                            <h5>Form Validation and Submission</h5>
+                            <p>Before submission, the system validates:</p>
+                            <ul>
+                                <li>Owner name is provided</li>
+                                <li>Structure and property use are selected</li>
+                                <li>Number of rooms is at least 1</li>
+                                <li>Zone and sub-zone are both selected</li>
+                                <li>GPS coordinates are valid (if provided)</li>
+                                <li>Telephone format is correct (if provided)</li>
+                            </ul>
+                            <p>Click "Register Property" to save. Upon successful registration, you'll be redirected to the property profile view page.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="alert alert-success">
-                    <strong>Smart Calculation:</strong> All financial information is automatically computed based on property characteristics. The system uses predefined fee structures to calculate bills immediately upon property details completion.
+                <div class="example">
+                    <strong>Example: 5-Room Residential Property Registration</strong><br>
+                    1. Enter Owner Name: "John Mensah"<br>
+                    2. Enter Telephone: "+233 24 123 4567"<br>
+                    3. Select Gender: "Male"<br>
+                    4. Select Structure: "Modern Building"<br>
+                    5. Property Use auto-populates with "Residential" and "Commercial"<br>
+                    6. Select Property Use: "Residential"<br>
+                    7. Set Number of Rooms: Click + button to reach 5 rooms<br>
+                    8. System calculates: GHS 75.00 per room × 5 rooms = GHS 375.00<br>
+                    9. Dynamic display shows: "GHS 375.00 - GHS 75/room × 5 rooms for Modern Building - Residential"<br>
+                    10. Click GPS button, location captured: "Dzorwulu, Accra"<br>
+                    11. Select Zone: "Dzorwulu Zone"<br>
+                    12. Select Sub-Zone: "Dzorwulu East"<br>
+                    13. Amount Payable displays: GHS 375.00<br>
+                    14. Submit form
                 </div>
 
                 <h3>Property Number System</h3>
                 <div class="alert alert-info">
-                    <strong>Format:</strong> Property numbers follow the format PROP000001 and are automatically generated for unique identification.
+                    <strong>Format:</strong> Property numbers follow the format PROP000001, PROP000002, etc., and are automatically generated for unique identification.
                 </div>
 
                 <h3>Dynamic Billing Calculation</h3>
@@ -814,14 +1004,18 @@
                     <li><strong>Structure Type:</strong> Modern Building, Concrete Block, Mud Block, etc.</li>
                     <li><strong>Property Use:</strong> Commercial properties typically have higher rates than residential</li>
                     <li><strong>Room Count:</strong> Fee per room multiplied by total number of rooms</li>
-                    <li><strong>Zone Factors:</strong> Different zones may have varying rate structures</li>
+                    <li><strong>Real-Time Updates:</strong> Change any parameter (structure, use, or room count) and see instant calculation updates</li>
                 </ul>
 
                 <div class="example">
-                    <strong>Example Automatic Calculation:</strong><br>
-                    Modern Building + Commercial Use + 5 Rooms<br>
-                    System calculates: GHS 150.00 per room × 5 rooms = GHS 750.00 current bill<br>
-                    Total payable automatically updated in real-time
+                    <strong>Example Fee Structure:</strong><br>
+                    Modern Building - Residential: GHS 75.00 per room<br>
+                    Modern Building - Commercial: GHS 150.00 per room<br>
+                    Concrete Block - Residential: GHS 50.00 per room<br>
+                    Concrete Block - Commercial: GHS 100.00 per room<br>
+                    <br>
+                    <strong>5-Room Modern Commercial Property:</strong><br>
+                    GHS 150.00 × 5 = GHS 750.00 current bill
                 </div>
             </section>
 
@@ -1027,7 +1221,7 @@
                 </ul>
 
                 <div class="alert alert-info">
-                    <strong>Zone Codes:</strong> Each zone must have a unique code for identification. Sub-zones inherit the parent zone relationship.
+                    <strong>Zone Codes:</strong> Each zone must have a unique code for identification. Sub-zones inherit the parent zone relationship and are filtered automatically during registration.
                 </div>
             </section>
 
@@ -1062,29 +1256,31 @@
                         <div class="step-number">4</div>
                         <div class="step-content">
                             <h5>Activate Fee Structure</h5>
-                            <p>Enable the fee structure for use in automatic bill calculations.</p>
+                            <p>Enable the fee structure for use in automatic bill calculations and type-ahead search.</p>
                         </div>
                     </div>
                 </div>
 
                 <h3>Property Fee Configuration</h3>
-                <p>Property fees are automatically calculated based on structure type, property use, and number of rooms:</p>
+                <p>Property fees are configured based on structure type and property use. The system calculates total bills by multiplying the fee per room by the number of rooms:</p>
                 
                 <div class="example">
-                    <strong>Automatic Property Fee Examples:</strong><br>
-                    Modern Building - Residential: GHS 75.00 per room (auto-calculated)<br>
-                    Modern Building - Commercial: GHS 150.00 per room (auto-calculated)<br>
-                    Concrete Block - Residential: GHS 50.00 per room (auto-calculated)<br>
-                    Concrete Block - Commercial: GHS 100.00 per room (auto-calculated)
+                    <strong>Example Property Fee Structure:</strong><br>
+                    Modern Building - Residential: GHS 75.00 per room<br>
+                    Modern Building - Commercial: GHS 150.00 per room<br>
+                    Concrete Block - Residential: GHS 50.00 per room<br>
+                    Concrete Block - Commercial: GHS 100.00 per room<br>
+                    Mud Block - Residential: GHS 25.00 per room<br>
+                    Mud Block - Commercial: GHS 50.00 per room
                 </div>
 
                 <h3>Dynamic Fee Calculation</h3>
                 <ul>
-                    <li>Typeahead search for business types during registration</li>
-                    <li>Auto-population of categories based on selected business type</li>
-                    <li>Real-time fee calculation and bill amount preview</li>
-                    <li>Automatic property bill calculation using room count multiplication</li>
-                    <li>Instant total payable computation without manual intervention</li>
+                    <li><strong>Business Type-Ahead:</strong> Fast search as you type with instant category population</li>
+                    <li><strong>Real-Time Business Fee Display:</strong> Fee amount appears immediately after category selection</li>
+                    <li><strong>Property Fee Calculation:</strong> Updates instantly when structure, use, or room count changes</li>
+                    <li><strong>Amount Payable Auto-Update:</strong> Recalculates automatically when any billing field changes</li>
+                    <li><strong>Visual Feedback:</strong> Dynamic panels show calculation breakdowns for user verification</li>
                 </ul>
             </section>
 
@@ -1350,6 +1546,46 @@
             <section id="troubleshooting" class="section">
                 <h2>Troubleshooting</h2>
                 
+                <h3>Common Registration Issues</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Business Type Not Selectable</h4>
+                        <ul>
+                            <li>Must select from dropdown, not just type</li>
+                            <li>Wait for dropdown to appear before selecting</li>
+                            <li>Clear field and start typing again</li>
+                            <li>Contact admin if business type is missing</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Category Dropdown Empty</h4>
+                        <ul>
+                            <li>Ensure business type was properly selected</li>
+                            <li>Check that fee structure is configured for that type</li>
+                            <li>Refresh page and try again</li>
+                            <li>Contact administrator to verify fee structure</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>GPS Location Fails</h4>
+                        <ul>
+                            <li>Ensure location services are enabled</li>
+                            <li>Allow browser location access</li>
+                            <li>Move to area with better GPS signal</li>
+                            <li>Manually enter coordinates if needed</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Current Bill Shows Zero</h4>
+                        <ul>
+                            <li>Verify business type and category are selected</li>
+                            <li>For properties, check structure and property use</li>
+                            <li>Ensure room count is at least 1</li>
+                            <li>Contact admin to check fee structure configuration</li>
+                        </ul>
+                    </div>
+                </div>
+
                 <h3>Common Login Issues</h3>
                 <div class="feature-grid">
                     <div class="feature-card">
@@ -1438,22 +1674,39 @@
                     <div class="feature-card">
                         <h4>Business Registration</h4>
                         <ul>
-                            <li>Use consistent naming conventions</li>
-                            <li>Verify location accuracy with GPS</li>
+                            <li>Use type-ahead feature properly - select from dropdown</li>
+                            <li>Verify location accuracy with GPS before submitting</li>
                             <li>Complete all required fields for proper automatic calculations</li>
                             <li>Double-check zone assignments</li>
+                            <li>Verify fee display shows correct amount before submitting</li>
                         </ul>
                     </div>
                     <div class="feature-card">
                         <h4>Property Registration</h4>
                         <ul>
                             <li>Accurate room count is essential for correct automatic billing</li>
+                            <li>Use +/- buttons or type directly for room count</li>
                             <li>Verify owner contact information</li>
                             <li>Ensure proper structure classification for accurate calculations</li>
                             <li>Confirm property use designation for correct fee application</li>
+                            <li>Select both zone and sub-zone (both required)</li>
                         </ul>
                     </div>
                 </div>
+
+                <h3>GPS Location Best Practices</h3>
+                <div class="alert alert-success">
+                    <strong>For Accurate GPS Capture</strong><br>
+                    Follow these tips for best results when capturing GPS locations.
+                </div>
+                <ul>
+                    <li><strong>Location Services:</strong> Ensure device location services are enabled before starting</li>
+                    <li><strong>Signal Quality:</strong> Capture outdoors or near windows for better GPS signal</li>
+                    <li><strong>Browser Permissions:</strong> Always allow location access when prompted</li>
+                    <li><strong>Wait for Accuracy:</strong> System tries high-accuracy GPS first, then falls back if needed</li>
+                    <li><strong>Verify Results:</strong> Check that geocoded address matches expected location</li>
+                    <li><strong>Manual Entry:</strong> Coordinates can be manually entered/adjusted if GPS fails</li>
+                </ul>
 
                 <h3>Security Guidelines</h3>
                 <div class="alert alert-success">

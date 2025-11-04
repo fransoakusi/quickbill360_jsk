@@ -1,6 +1,6 @@
 <?php
 /**
- * Officer  - Add Business Form (Enhanced with Type-ahead)
+ * Officer  - Add Business Form (Enhanced with Type-ahead and Account Numbers)
  * businesses/add.php
  */
 
@@ -50,6 +50,36 @@ if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 
 $userDisplayName = getUserDisplayName($currentUser);
 $errors = [];
 $success = false;
+
+// Generate business number
+function generateBusinessNumber($db, $zone_id, $sub_zone_id) {
+    // Get zone and sub-zone codes
+    $zoneResult = $db->fetchAll("SELECT zone_code FROM zones WHERE zone_id = ?", [$zone_id]);
+    $subZoneResult = $db->fetchAll("SELECT sub_zone_code FROM sub_zones WHERE sub_zone_id = ?", [$sub_zone_id]);
+    
+    if (empty($zoneResult)) {
+        throw new Exception("Invalid zone selection.");
+    }
+    
+    $zoneCode = $zoneResult[0]['zone_code'];
+    
+    // If sub-zone is not provided or invalid, use zone code only
+    if ($sub_zone_id > 0 && !empty($subZoneResult)) {
+        $subZoneCode = $subZoneResult[0]['sub_zone_code'];
+    } else {
+        $subZoneCode = 'GEN'; // General sub-zone code
+    }
+    
+    // Get the next business number for this zone-subzone combination
+    $countQuery = "SELECT COUNT(*) as count FROM businesses 
+                  WHERE zone_id = ? AND " . ($sub_zone_id > 0 ? "sub_zone_id = ?" : "sub_zone_id IS NULL");
+    $params = $sub_zone_id > 0 ? [$zone_id, $sub_zone_id] : [$zone_id];
+    $countResult = $db->fetchAll($countQuery, $params);
+    $nextNumber = ($countResult[0]['count'] ?? 0) + 1;
+    
+    // Generate business number with format: BUS-ZONECODE-SUBZONECODE-NUMBER
+    return sprintf('BUS-%s-%s-%05d', $zoneCode, $subZoneCode, $nextNumber);
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -127,19 +157,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Calculate amount payable
             $amount_payable = $old_bill + $arrears + $current_bill - $previous_payments;
             
+            // Generate business number
+            $businessNumber = generateBusinessNumber($db, $zone_id, $sub_zone_id);
+            
             // Insert business
             $stmt = $db->execute(
                 "INSERT INTO businesses (
-                    business_name, owner_name, business_type, category, telephone, 
+                    business_number, business_name, owner_name, business_type, category, telephone, 
                     exact_location, latitude, longitude, old_bill, previous_payments, 
                     arrears, current_bill, amount_payable, batch, zone_id, sub_zone_id, 
                     created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
                 [
-                    $business_name, $owner_name, $business_type, $category, $telephone,
+                    $businessNumber, $business_name, $owner_name, $business_type, $category, $telephone,
                     $exact_location, $latitude, $longitude, $old_bill, $previous_payments,
                     $arrears, $current_bill, $amount_payable, $batch, $zone_id, 
-                    $sub_zone_id > 0 ? $sub_zone_id : null, $currentUser['user_id'] // Fixed: changed from 'id' to 'user_id'
+                    $sub_zone_id > 0 ? $sub_zone_id : null, $currentUser['user_id']
                 ]
             );
             
@@ -153,13 +186,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         "INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values, ip_address, user_agent, created_at)
                          VALUES (?, 'CREATE_BUSINESS', 'businesses', ?, ?, ?, ?, NOW())",
                         [
-                            $currentUser['user_id'], $business_id, // Fixed: changed from 'id' to 'user_id'
-                            json_encode(['business_name' => $business_name, 'owner_name' => $owner_name]),
+                            $currentUser['user_id'], $business_id,
+                            json_encode([
+                                'business_number' => $businessNumber,
+                                'business_name' => $business_name, 
+                                'owner_name' => $owner_name
+                            ]),
                             $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']
                         ]
                     );
                     
-                    setFlashMessage('success', 'Business registered successfully!');
+                    setFlashMessage('success', 'Business registered successfully with account number: ' . $businessNumber);
                     header('Location: view.php?id=' . $business_id);
                     exit();
                 } else {
@@ -187,11 +224,11 @@ try {
          ORDER BY business_type, category"
     );
     
-    // Get zones
-    $zones = $db->fetchAll("SELECT zone_id, zone_name FROM zones ORDER BY zone_name");
+    // Get zones with codes
+    $zones = $db->fetchAll("SELECT zone_id, zone_name, zone_code FROM zones ORDER BY zone_name");
     
-    // Get sub-zones
-    $sub_zones = $db->fetchAll("SELECT sub_zone_id, zone_id, sub_zone_name FROM sub_zones ORDER BY sub_zone_name");
+    // Get sub-zones with codes
+    $sub_zones = $db->fetchAll("SELECT sub_zone_id, zone_id, sub_zone_name, sub_zone_code FROM sub_zones ORDER BY sub_zone_name");
     
 } catch (Exception $e) {
     $fee_structure = [];
@@ -217,7 +254,11 @@ foreach ($sub_zones as $sub_zone) {
     if (!isset($zones_with_subzones[$sub_zone['zone_id']])) {
         $zones_with_subzones[$sub_zone['zone_id']] = [];
     }
-    $zones_with_subzones[$sub_zone['zone_id']][] = $sub_zone;
+    $zones_with_subzones[$sub_zone['zone_id']][] = [
+        'sub_zone_id' => $sub_zone['sub_zone_id'],
+        'sub_zone_name' => $sub_zone['sub_zone_name'],
+        'sub_zone_code' => $sub_zone['sub_zone_code']
+    ];
 }
 
 // Set current directory and page for active link
@@ -1158,7 +1199,7 @@ $currentPage = 'record.php';
             <div class="form-container fade-in">
                 <div class="form-header">
                     <h1 class="form-title">Register New Business</h1>
-                    <p class="form-subtitle">Enter business information to register it in the billing system</p>
+                    <p class="form-subtitle">Enter business information to register it in the billing system. Business number will be auto-generated.</p>
                 </div>
                 
                 <!-- Error Messages -->
@@ -1311,8 +1352,12 @@ $currentPage = 'record.php';
                                     <option value="">Select Zone</option>
                                     <?php foreach ($zones as $zone): ?>
                                         <option value="<?php echo $zone['zone_id']; ?>"
+                                                data-zone-code="<?php echo htmlspecialchars($zone['zone_code'] ?? ''); ?>"
                                                 <?php echo (($_POST['zone_id'] ?? '') == $zone['zone_id']) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($zone['zone_name']); ?>
+                                            <?php if (!empty($zone['zone_code'])): ?>
+                                                (<?php echo htmlspecialchars($zone['zone_code']); ?>)
+                                            <?php endif; ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -1791,7 +1836,11 @@ $currentPage = 'record.php';
                         zonesWithSubzones[selectedZone].forEach(function(subZone) {
                             const option = document.createElement('option');
                             option.value = subZone.sub_zone_id;
+                            option.dataset.subZoneCode = subZone.sub_zone_code;
                             option.textContent = subZone.sub_zone_name;
+                            if (subZone.sub_zone_code) {
+                                option.textContent += ' (' + subZone.sub_zone_code + ')';
+                            }
                             subZoneSelect.appendChild(option);
                         });
                     }

@@ -20,7 +20,7 @@ session_start();
 require_once '../../includes/auth.php';
 require_once '../../includes/security.php';
 
-// Initialize auth and security
+// Initialize auth and security 
 initAuth();
 initSecurity();
 

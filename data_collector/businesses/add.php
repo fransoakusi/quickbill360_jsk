@@ -1,6 +1,6 @@
 <?php
 /**
- * Data Collector - Add Business Form with Offline Sync (Fixed Schema Validation)
+ * Data Collector - Add Business Form with Offline Sync (Updated Account Number Format)
  * businesses/add.php
  */
 
@@ -105,9 +105,11 @@ function validateBusinessData($data, $db) {
         }
     }
     
-    // Sub-zone validation (optional but must be valid if provided)
+    // Sub-zone validation (NOW REQUIRED)
     $sub_zone_id = intval($data['sub_zone_id'] ?? 0);
-    if ($sub_zone_id > 0) {
+    if ($sub_zone_id <= 0) {
+        $errors[] = "Sub-zone is required.";
+    } else {
         $sub_zone_check = $db->fetchRow(
             "SELECT sz.sub_zone_id FROM sub_zones sz WHERE sz.sub_zone_id = ? AND sz.zone_id = ?", 
             [$sub_zone_id, $zone_id]
@@ -196,8 +198,36 @@ function sanitizeBusinessData($data) {
         'current_bill' => max(0, round(floatval($data['current_bill'] ?? 0), 2)),
         'batch' => substr(trim($data['batch'] ?? ''), 0, 50),
         'zone_id' => intval($data['zone_id'] ?? 0),
-        'sub_zone_id' => intval($data['sub_zone_id'] ?? 0) > 0 ? intval($data['sub_zone_id']) : null,
+        'sub_zone_id' => intval($data['sub_zone_id'] ?? 0),
     ];
+}
+
+// Generate account number with zone and sub-zone codes
+function generateAccountNumber($db, $zone_id, $sub_zone_id) {
+    // Get zone code
+    $zoneData = $db->fetchRow(
+        "SELECT zone_code FROM zones WHERE zone_id = ?",
+        [$zone_id]
+    );
+    
+    // Get sub-zone code
+    $subZoneData = $db->fetchRow(
+        "SELECT sub_zone_code FROM sub_zones WHERE sub_zone_id = ?",
+        [$sub_zone_id]
+    );
+    
+    $zoneCode = $zoneData['zone_code'] ?? 'Z';
+    $subZoneCode = $subZoneData['sub_zone_code'] ?? 'SZ';
+    
+    // Get the next number for this zone-subzone combination
+    $countQuery = "SELECT COUNT(*) as count FROM businesses 
+                   WHERE zone_id = ? AND sub_zone_id = ?";
+    $countResult = $db->fetchRow($countQuery, [$zone_id, $sub_zone_id]);
+    $nextNumber = ($countResult['count'] ?? 0) + 1;
+    
+    // Generate account number: BIZ-ZONECODE-SUBZONECODE-NUMBER
+    // Example: BIZ-CZ01-MA01-0001
+    return sprintf('BIZ-%s-%s-%04d', $zoneCode, $subZoneCode, $nextNumber);
 }
 
 // Handle AJAX sync request
@@ -235,7 +265,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'sync_offline_data') {
                 // Sanitize data
                 $cleanData = sanitizeBusinessData($businessData);
                 
-                // Calculate amount payable using the trigger logic
+                // Generate account number with zone and sub-zone codes
+                $accountNumber = generateAccountNumber($db, $cleanData['zone_id'], $cleanData['sub_zone_id']);
+                
+                // Calculate amount payable
                 $amount_payable = max(0, $cleanData['old_bill'] - $cleanData['previous_payments']) + $cleanData['current_bill'];
                 
                 // Start transaction for data integrity
@@ -244,13 +277,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'sync_offline_data') {
                 try {
                     // Insert business with proper parameter binding
                     $sql = "INSERT INTO businesses (
-                        business_name, owner_name, business_type, category, telephone, 
+                        account_number, business_name, owner_name, business_type, category, telephone, 
                         exact_location, latitude, longitude, old_bill, previous_payments, 
                         arrears, current_bill, amount_payable, batch, zone_id, sub_zone_id, 
                         created_by, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                     
                     $params = [
+                        $accountNumber,
                         $cleanData['business_name'],
                         $cleanData['owner_name'], 
                         $cleanData['business_type'],
@@ -284,6 +318,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'sync_offline_data') {
                                     $currentUser['user_id'], 
                                     $business_id,
                                     json_encode([
+                                        'account_number' => $accountNumber,
                                         'business_name' => $cleanData['business_name'], 
                                         'owner_name' => $cleanData['owner_name'], 
                                         'sync_timestamp' => date('Y-m-d H:i:s')
@@ -299,6 +334,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'sync_offline_data') {
                                 'client_id' => $businessData['client_id'] ?? null,
                                 'success' => true,
                                 'business_id' => $business_id,
+                                'account_number' => $accountNumber,
                                 'message' => 'Business registered successfully'
                             ];
                             $successCount++;
@@ -359,6 +395,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_GET['action'])) {
             // Sanitize data
             $cleanData = sanitizeBusinessData($_POST);
             
+            // Generate account number with zone and sub-zone codes
+            $accountNumber = generateAccountNumber($db, $cleanData['zone_id'], $cleanData['sub_zone_id']);
+            
             // Calculate amount payable
             $amount_payable = max(0, $cleanData['old_bill'] - $cleanData['previous_payments']) + $cleanData['current_bill'];
             
@@ -368,13 +407,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_GET['action'])) {
             try {
                 // Insert business
                 $sql = "INSERT INTO businesses (
-                    business_name, owner_name, business_type, category, telephone, 
+                    account_number, business_name, owner_name, business_type, category, telephone, 
                     exact_location, latitude, longitude, old_bill, previous_payments, 
                     arrears, current_bill, amount_payable, batch, zone_id, sub_zone_id, 
                     created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                 
                 $params = [
+                    $accountNumber,
                     $cleanData['business_name'],
                     $cleanData['owner_name'], 
                     $cleanData['business_type'],
@@ -408,6 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_GET['action'])) {
                                 $currentUser['user_id'], 
                                 $business_id,
                                 json_encode([
+                                    'account_number' => $accountNumber,
                                     'business_name' => $cleanData['business_name'], 
                                     'owner_name' => $cleanData['owner_name']
                                 ]),
@@ -418,7 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_GET['action'])) {
                         
                         $db->commit();
                         
-                        setFlashMessage('success', 'Business registered successfully!');
+                        setFlashMessage('success', 'Business registered successfully with Account Number: ' . $accountNumber);
                         header('Location: view.php?id=' . $business_id);
                         exit();
                     } else {
@@ -1698,11 +1739,11 @@ foreach ($sub_zones as $sub_zone) {
                             </div>
                             
                             <div class="form-group">
-                                <label class="form-label">Sub-Zone</label>
-                                <select name="sub_zone_id" class="form-control" id="subZoneSelect">
+                                <label class="form-label required">Sub-Zone</label>
+                                <select name="sub_zone_id" class="form-control" id="subZoneSelect" required>
                                     <option value="">Select Sub-Zone</option>
                                 </select>
-                                <div class="form-help">Optional sub-zone for more specific location</div>
+                                <div class="form-help">Required - Select the specific sub-zone (needed for account number generation)</div>
                             </div>
                         </div>
                     </div>
@@ -1799,7 +1840,7 @@ foreach ($sub_zones as $sub_zone) {
         // IndexedDB setup for robust offline storage
         let db;
         const dbName = 'BusinessFormDB';
-        const dbVersion = 6; // Incremented for schema fixes
+        const dbVersion = 7; // Incremented for account number update
         
         // Enhanced IndexedDB initialization
         function initDB() {
@@ -1931,6 +1972,12 @@ foreach ($sub_zones as $sub_zone) {
                 errors.push('Zone is required');
             }
             
+            // SUB-ZONE IS NOW REQUIRED
+            const sub_zone_id = parseInt(formData.sub_zone_id);
+            if (!sub_zone_id || sub_zone_id <= 0) {
+                errors.push('Sub-zone is required');
+            }
+            
             const current_bill = parseFloat(formData.current_bill);
             if (!current_bill || current_bill <= 0) {
                 errors.push('Current bill must be greater than 0');
@@ -2019,7 +2066,7 @@ foreach ($sub_zones as $sub_zone) {
                 case 'zone_id':
                 case 'sub_zone_id':
                     const id = parseInt(sanitized);
-                    if (isNaN(id) || id <= 0) return key === 'zone_id' ? 1 : null;
+                    if (isNaN(id) || id <= 0) return null;
                     return id;
                 default:
                     return sanitized;
@@ -2046,7 +2093,7 @@ foreach ($sub_zones as $sub_zone) {
                 sanitizedData.client_id = generateClientId();
                 sanitizedData.timestamp = new Date().toISOString();
                 sanitizedData.synced = false;
-                sanitizedData.version = 2; // Updated version for schema fixes
+                sanitizedData.version = 3; // Updated version for account number changes
                 
                 return new Promise((resolve, reject) => {
                     const transaction = db.transaction(['businessForms'], 'readwrite');

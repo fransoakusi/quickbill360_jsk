@@ -763,7 +763,7 @@ if (!function_exists('formatPaymentReference')) {
 // =============================================
 
 if (!defined('APP_NAME')) {
-    define('APP_NAME', 'QUICKBILL 305');
+    define('APP_NAME', 'QUICKBILL 360');
 }
 
 if (!defined('BASE_URL')) {

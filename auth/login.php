@@ -1,26 +1,21 @@
+
 <?php
 /**
  * Login Page for QUICKBILL 305
- * Handles user authentication and redirects to appropriate dashboards
- * Enhanced with System Restriction Checks
+ * UPDATED: Added Internal Auditor Role Redirect
  */
 
-// Define application constant
 define('QUICKBILL_305', true);
 
-// Include required files first (before starting session)
 require_once '../config/config.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-// Start session after configuration
 session_start();
 
-// Include auth and security after session is started
 require_once '../includes/auth.php';
 require_once '../includes/security.php';
 
-// Initialize auth and security
 initAuth();
 initSecurity();
 
@@ -29,7 +24,6 @@ function checkSystemRestriction() {
     try {
         $db = new Database();
         
-        // Get current restriction status
         $restrictionCheck = $db->fetchRow("
             SELECT sr.*, ss.setting_value as system_restricted,
                    DATEDIFF(sr.restriction_end_date, CURDATE()) as days_remaining
@@ -40,7 +34,6 @@ function checkSystemRestriction() {
             LIMIT 1
         ");
         
-        // Default return values for when no restrictions exist
         if (!$restrictionCheck) {
             return [
                 'restricted' => false,
@@ -71,7 +64,6 @@ function checkSystemRestriction() {
         
     } catch (Exception $e) {
         writeLog("Login restriction check error: " . $e->getMessage(), 'ERROR');
-        // Return default values on error
         return [
             'restricted' => false,
             'days_remaining' => 0,
@@ -84,10 +76,9 @@ function checkSystemRestriction() {
     }
 }
 
-// Get restriction status
 $restrictionStatus = checkSystemRestriction();
 
-// Redirect if already logged in
+// Redirect if already logged in (UPDATED WITH INTERNAL AUDITOR)
 if (isLoggedIn()) {
     $userRole = getCurrentUserRole();
     
@@ -105,6 +96,9 @@ if (isLoggedIn()) {
         case 'Data Collector':
             header('Location: ../data_collector/index.php');
             break;
+        case 'Internal Auditor':
+            header('Location: ../internal_auditor/index.php');
+            break;
         default:
             logout();
             break;
@@ -117,7 +111,6 @@ $success = '';
 
 // Enhanced login form submission with restriction checks
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verify CSRF token
     if (!verifyCsrfToken()) {
         $error = 'Security validation failed. Please try again.';
     } else {
@@ -128,10 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($username) || empty($password)) {
             $error = 'Please enter both username and password.';
         } else {
-            // RESTRICTION CHECK: Before attempting login
             $proceedWithLogin = false;
             
-            // First check if user is Super Admin - Super Admin ALWAYS bypasses restrictions
+            // Check if user is Super Admin
             $isSuperAdminUser = false;
             try {
                 $db = new Database();
@@ -152,12 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Super Admin ALWAYS bypasses restrictions
             if ($isSuperAdminUser) {
                 $proceedWithLogin = true;
-            } 
-            // For non-Super Admin users, check if system is restricted
-            elseif (!empty($restrictionStatus['restricted']) && $restrictionStatus['restricted']) {
+            } elseif (!empty($restrictionStatus['restricted']) && $restrictionStatus['restricted']) {
                 $error = 'System is currently restricted until ' . htmlspecialchars($restrictionStatus['end_date'] ?? 'Unknown Date') . '. Only Super Admin can access the system.';
                 
-                // Log the blocked login attempt
                 if (function_exists('logActivity')) {
                     logActivity('BLOCKED_LOGIN_ATTEMPT_DURING_RESTRICTION', [
                         'username' => $username,
@@ -166,7 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 }
             } else {
-                // System not restricted, proceed normally for all users
                 $proceedWithLogin = true;
             }
             
@@ -175,11 +163,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $loginResult = loginUser($username, $password, $remember_me);
                 
                 if ($loginResult['success']) {
-                    // Check if it's first login
                     if ($loginResult['first_login']) {
                         header('Location: first_login.php');
                     } else {
-                        // Redirect based on role
+                        // Redirect based on role (UPDATED WITH INTERNAL AUDITOR)
                         $userRole = $loginResult['user']['role_name'];
                         
                         switch ($userRole) {
@@ -195,6 +182,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 break;
                             case 'Data Collector':
                                 header('Location: ../data_collector/index.php');
+                                break;
+                            case 'Internal Auditor':
+                                header('Location: ../internal_auditor/index.php');
                                 break;
                             default:
                                 logout();
@@ -237,8 +227,7 @@ if (isset($_GET['success'])) {
     }
 }
 
-// Determine if form should be disabled (never disable for potential Super Admin login)
-$formDisabled = false; // Always allow login attempts - restriction check happens server-side
+$formDisabled = false;
 ?>
 <!DOCTYPE html>
 <html lang="en">

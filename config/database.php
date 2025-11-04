@@ -6,7 +6,7 @@
 
 class Database {
     private $host = 'localhost';
-    private $db_name = 'quickbill_360_jsk';
+    private $db_name = 'quickbill_360';
     private $username = 'root';
     private $password = '';
     private $conn;

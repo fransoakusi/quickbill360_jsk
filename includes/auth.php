@@ -1,8 +1,7 @@
 <?php
 /**
  * Authentication Functions for QUICKBILL 305
- * Handles user authentication, authorization, and session management
- * Enhanced with comprehensive permission system
+ * COMPLETE VERSION - Updated with Internal Auditor Role
  */
 
 // Prevent direct access
@@ -113,7 +112,7 @@ function loginUser($username, $password, $rememberMe = false) {
         $updateSql = "UPDATE users SET last_login = NOW() WHERE user_id = ?";
         $db->execute($updateSql, [$user['user_id']]);
         
-        // Log activity using the function from functions.php
+        // Log activity
         if (function_exists('logUserAction')) {
             logUserAction('USER_LOGIN', 'users', $user['user_id']);
         } else {
@@ -235,7 +234,7 @@ function changePassword($userId, $currentPassword, $newPassword) {
 }
 
 /**
- * Enhanced permission checking with detailed role-based permissions
+ * Enhanced permission checking with Internal Auditor role
  */
 function hasPermission($permission) {
     if (!isLoggedIn()) {
@@ -250,9 +249,30 @@ function hasPermission($permission) {
         return $permission !== 'restrictions.view';
     }
     
-    // Admin has all permissions except restrictions.view (same as Super Admin)
+    // Admin has all permissions except restrictions.view
     if ($role === 'Admin') {
         return $permission !== 'restrictions.view';
+    }
+    
+    // Internal Auditor - READ ONLY with full audit access
+    if ($role === 'Internal Auditor') {
+        $auditorPermissions = [
+            // View permissions for all modules
+            'businesses.view', 'properties.view', 'users.view',
+            'payments.view', 'billing.view', 'zones.view',
+            'fees.view', 'map.view',
+            
+            // Full audit access
+            'audit.view', 'audit.create', 'audit.export',
+            'audit.findings.view', 'audit.findings.create', 'audit.findings.edit',
+            
+            // Reports - view and generate only
+            'reports.view', 'reports.generate', 'reports.export',
+            
+            // NO MODIFY permissions
+        ];
+        
+        return in_array($permission, $auditorPermissions);
     }
     
     // Define role-based permissions for other roles
@@ -300,15 +320,12 @@ function requireLogin() {
         if (isAjaxRequest()) {
             sendJsonResponse(['error' => 'Authentication required'], 401);
         } else {
-            // Use the fixed BASE_URL from config.php
             $loginUrl = BASE_URL . '/auth/login.php';
             
-            // Fallback if BASE_URL is not defined
             if (!defined('BASE_URL')) {
-                $loginUrl = '/quickbill_305/auth/login.php';
+                $loginUrl = '/quickbill_360_jsk/auth/login.php';
             }
             
-            // Add current page as return URL
             $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
             if (!empty($currentUrl)) {
                 $loginUrl .= '?return=' . urlencode($currentUrl);
@@ -371,7 +388,6 @@ function isAccountLocked($identifier) {
     
     $data = $_SESSION[$key];
     
-    // Check if lockout period has expired (5 minutes default)
     $lockoutTime = defined('LOGIN_LOCKOUT_TIME') ? LOGIN_LOCKOUT_TIME : 300;
     if (time() - $data['last_attempt'] > $lockoutTime) {
         unset($_SESSION[$key]);
@@ -383,85 +399,7 @@ function isAccountLocked($identifier) {
 }
 
 /**
- * Generate remember me token
- */
-function generateRememberMeToken($userId) {
-    $token = bin2hex(random_bytes(32));
-    $expiry = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)); // 30 days
-    
-    try {
-        // For now, we'll store in session
-        $_SESSION['remember_tokens'][$userId] = [
-            'token' => $token,
-            'expires' => $expiry
-        ];
-        
-        return $token;
-        
-    } catch (Exception $e) {
-        writeLog("Remember me token error: " . $e->getMessage(), 'ERROR');
-        return null;
-    }
-}
-
-/**
- * Clear remember me token
- */
-function clearRememberMeToken($userId) {
-    if (isset($_SESSION['remember_tokens'][$userId])) {
-        unset($_SESSION['remember_tokens'][$userId]);
-    }
-}
-
-/**
- * Check remember me token
- */
-function checkRememberMeToken() {
-    if (!isset($_COOKIE['remember_me'])) {
-        return false;
-    }
-    
-    $token = $_COOKIE['remember_me'];
-    
-    // Check token validity
-    if (isset($_SESSION['remember_tokens'])) {
-        foreach ($_SESSION['remember_tokens'] as $userId => $tokenData) {
-            if ($tokenData['token'] === $token && strtotime($tokenData['expires']) > time()) {
-                // Auto login user
-                try {
-                    $db = new Database();
-                    $sql = "SELECT u.*, ur.role_name 
-                            FROM users u 
-                            JOIN user_roles ur ON u.role_id = ur.role_id 
-                            WHERE u.user_id = ? AND u.is_active = 1";
-                    
-                    $user = $db->fetchRow($sql, [$userId]);
-                    
-                    if ($user) {
-                        $_SESSION['user_id'] = $user['user_id'];
-                        $_SESSION['username'] = $user['username'];
-                        $_SESSION['role'] = $user['role_name'];
-                        $_SESSION['first_name'] = $user['first_name'];
-                        $_SESSION['last_name'] = $user['last_name'];
-                        $_SESSION['first_login'] = false;
-                        $_SESSION['login_time'] = time();
-                        
-                        return true;
-                    }
-                } catch (Exception $e) {
-                    writeLog("Remember me login error: " . $e->getMessage(), 'ERROR');
-                }
-            }
-        }
-    }
-    
-    // Invalid token, clear cookie
-    setcookie('remember_me', '', time() - 3600, '/', '', false, true);
-    return false;
-}
-
-/**
- * Get user display name (uses existing function if available)
+ * Get user display name
  */
 function getUserDisplayName($user = null) {
     if (!$user) {
@@ -520,6 +458,66 @@ function isRevenueOfficer() {
  */
 function isDataCollector() {
     return getCurrentUserRole() === 'Data Collector';
+}
+
+/**
+ * Check if current user is Internal Auditor
+ */
+function isInternalAuditor() {
+    return getCurrentUserRole() === 'Internal Auditor';
+}
+
+/**
+ * Check if user can view audit logs
+ */
+function canViewAuditLogs() {
+    $role = getCurrentUserRole();
+    return in_array($role, ['Super Admin', 'Admin', 'Internal Auditor']);
+}
+
+/**
+ * Check if user can create audit findings
+ */
+function canCreateAuditFindings() {
+    return isInternalAuditor() || isAdmin();
+}
+
+/**
+ * Check if user has read-only access
+ */
+function isReadOnlyUser() {
+    return isInternalAuditor();
+}
+
+/**
+ * Redirect to appropriate dashboard based on role
+ */
+function redirectToDashboard() {
+    $userRole = getCurrentUserRole();
+    
+    switch ($userRole) {
+        case 'Super Admin':
+        case 'Admin':
+            header('Location: ' . BASE_URL . '/admin/index.php');
+            break;
+        case 'Officer':
+            header('Location: ' . BASE_URL . '/officer/index.php');
+            break;
+        case 'Revenue Officer':
+            header('Location: ' . BASE_URL . '/revenue_officer/index.php');
+            break;
+        case 'Data Collector':
+            header('Location: ' . BASE_URL . '/data_collector/index.php');
+            break;
+        case 'Internal Auditor':
+            header('Location: ' . BASE_URL . '/internal_auditor/index.php');
+            break;
+        default:
+            logout();
+            header('Location: ' . BASE_URL . '/auth/login.php?error=invalid_role');
+            break;
+    }
+    exit();
 }
 
 /**
@@ -599,7 +597,7 @@ function canDeleteUser($targetUserId) {
 }
 
 /**
- * Get permissions for current user role
+ * Get permissions for current user role (UPDATED with Internal Auditor)
  */
 function getCurrentUserPermissions() {
     if (!isLoggedIn()) {
@@ -610,7 +608,6 @@ function getCurrentUserPermissions() {
     
     // Super Admin and Admin have all permissions except restrictions.view
     if ($role === 'Super Admin' || $role === 'Admin') {
-        // Return a comprehensive list of all available permissions except restrictions.view
         return [
             'users.view', 'users.create', 'users.edit', 'users.delete',
             'businesses.view', 'businesses.create', 'businesses.edit', 'businesses.delete',
@@ -619,13 +616,24 @@ function getCurrentUserPermissions() {
             'billing.view', 'billing.create', 'billing.edit', 'billing.generate',
             'payments.view', 'payments.create', 'payments.edit', 'payments.delete',
             'fees.view', 'fees.edit', 'fees.create', 'fees.delete',
-            'reports.view', 'reports.generate',
+            'reports.view', 'reports.generate', 'reports.export',
             'notifications.view', 'notifications.send',
             'settings.view', 'settings.edit',
             'backup.create', 'backup.restore',
-            'audit.view',
+            'audit.view', 'audit.export',
             'map.view'
-            // Note: 'restrictions.view' is intentionally excluded
+        ];
+    }
+    
+    // Internal Auditor permissions - READ ONLY + AUDIT
+    if ($role === 'Internal Auditor') {
+        return [
+            'businesses.view', 'properties.view', 'users.view',
+            'payments.view', 'billing.view', 'zones.view',
+            'fees.view', 'map.view',
+            'audit.view', 'audit.create', 'audit.export',
+            'audit.findings.view', 'audit.findings.create', 'audit.findings.edit',
+            'reports.view', 'reports.generate', 'reports.export'
         ];
     }
     
@@ -779,7 +787,7 @@ function checkFirstLoginSetup() {
 }
 
 /**
- * Get available roles for current user to assign
+ * Get available roles for current user to assign (UPDATED)
  */
 function getAssignableRoles() {
     $currentRole = getCurrentUserRole();
@@ -803,7 +811,6 @@ function getAssignableRoles() {
 
 /**
  * Initialize authentication session
- * Call this function after session_start()
  */
 function initAuth() {
     // Check remember me if not logged in
@@ -813,7 +820,7 @@ function initAuth() {
     
     // Check session timeout
     if (isLoggedIn() && isset($_SESSION['login_time'])) {
-        $sessionLifetime = defined('SESSION_LIFETIME') ? SESSION_LIFETIME : 3600; // 1 hour default
+        $sessionLifetime = defined('SESSION_LIFETIME') ? SESSION_LIFETIME : 3600;
         if (time() - $_SESSION['login_time'] > $sessionLifetime) {
             logout();
             if (!isAjaxRequest()) {
@@ -825,10 +832,82 @@ function initAuth() {
     }
 }
 
-// getClientIP() function is already defined in functions.php
+/**
+ * Generate remember me token
+ */
+function generateRememberMeToken($userId) {
+    $token = bin2hex(random_bytes(32));
+    $expiry = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60));
+    
+    try {
+        $_SESSION['remember_tokens'][$userId] = [
+            'token' => $token,
+            'expires' => $expiry
+        ];
+        
+        return $token;
+        
+    } catch (Exception $e) {
+        writeLog("Remember me token error: " . $e->getMessage(), 'ERROR');
+        return null;
+    }
+}
 
 /**
- * Send JSON response (if not already defined in functions.php)
+ * Clear remember me token
+ */
+function clearRememberMeToken($userId) {
+    if (isset($_SESSION['remember_tokens'][$userId])) {
+        unset($_SESSION['remember_tokens'][$userId]);
+    }
+}
+
+/**
+ * Check remember me token
+ */
+function checkRememberMeToken() {
+    if (!isset($_COOKIE['remember_me'])) {
+        return false;
+    }
+    
+    $token = $_COOKIE['remember_me'];
+    
+    if (isset($_SESSION['remember_tokens'])) {
+        foreach ($_SESSION['remember_tokens'] as $userId => $tokenData) {
+            if ($tokenData['token'] === $token && strtotime($tokenData['expires']) > time()) {
+                try {
+                    $db = new Database();
+                    $sql = "SELECT u.*, ur.role_name 
+                            FROM users u 
+                            JOIN user_roles ur ON u.role_id = ur.role_id 
+                            WHERE u.user_id = ? AND u.is_active = 1";
+                    
+                    $user = $db->fetchRow($sql, [$userId]);
+                    
+                    if ($user) {
+                        $_SESSION['user_id'] = $user['user_id'];
+                        $_SESSION['username'] = $user['username'];
+                        $_SESSION['role'] = $user['role_name'];
+                        $_SESSION['first_name'] = $user['first_name'];
+                        $_SESSION['last_name'] = $user['last_name'];
+                        $_SESSION['first_login'] = false;
+                        $_SESSION['login_time'] = time();
+                        
+                        return true;
+                    }
+                } catch (Exception $e) {
+                    writeLog("Remember me login error: " . $e->getMessage(), 'ERROR');
+                }
+            }
+        }
+    }
+    
+    setcookie('remember_me', '', time() - 3600, '/', '', false, true);
+    return false;
+}
+
+/**
+ * Send JSON response (if not already defined)
  */
 if (!function_exists('sendJsonResponse')) {
     function sendJsonResponse($data, $statusCode = 200) {

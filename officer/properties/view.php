@@ -1,6 +1,6 @@
 <?php
 /**
- * Officer - View Property Profile
+ * Officer - View Property Profile - FIXED VERSION
  * properties/view.php
  */
 
@@ -86,7 +86,29 @@ try {
         exit();
     }
     
-    // Calculate remaining balance (outstanding amount after all payments)
+    // FIX: Calculate remaining balance correctly - get current year's bill first
+    $currentYear = date('Y');
+    $currentBill = $db->fetchRow("
+        SELECT bill_id, amount_payable, billing_year, status
+        FROM bills 
+        WHERE bill_type = 'Property' AND reference_id = ? AND billing_year = ?
+        ORDER BY generated_at DESC 
+        LIMIT 1
+    ", [$property_id, $currentYear]);
+    
+    if ($currentBill) {
+        // FIX: Use the bill's amount_payable directly - this is the correct remaining balance for the current year
+        $remainingBalance = floatval($currentBill['amount_payable']);
+        $hasCurrentBill = true;
+        $currentBillYear = $currentBill['billing_year'];
+    } else {
+        // No bill for current year, use property's amount payable
+        $remainingBalance = floatval($property['amount_payable']);
+        $hasCurrentBill = false;
+        $currentBillYear = $currentYear;
+    }
+    
+    // Get total paid across all years for reference
     $totalPaymentsQuery = "SELECT COALESCE(SUM(p.amount_paid), 0) as total_paid
                           FROM payments p 
                           INNER JOIN bills b ON p.bill_id = b.bill_id 
@@ -94,9 +116,6 @@ try {
                           AND p.payment_status = 'Successful'";
     $totalPaymentsResult = $db->fetchRow($totalPaymentsQuery, [$property_id]);
     $totalPaid = $totalPaymentsResult['total_paid'] ?? 0;
-    
-    // Calculate remaining balance: amount payable minus total successful payments
-    $remainingBalance = max(0, $property['amount_payable'] - $totalPaid);
     
     // Get property bills
     $bills = $db->fetchAll("
@@ -1212,7 +1231,7 @@ try {
                         <span class="icon-balance" style="display: none;"></span>
                     </div>
                     <div class="stat-value">₵ <?php echo number_format($remainingBalance, 2); ?></div>
-                    <div class="stat-label">Remaining Balance</div>
+                    <div class="stat-label"><?php echo $currentBillYear; ?> Bill Balance</div>
                 </div>
 
                 <div class="stat-card warning">
@@ -1495,18 +1514,18 @@ try {
                                 <h4>
                                     <i class="fas fa-balance-scale"></i>
                                     <span class="icon-balance" style="display: none;"></span>
-                                    <?php echo $remainingBalance <= 0 ? 'Account Fully Paid' : 'Outstanding Balance'; ?>
+                                    <?php echo $remainingBalance <= 0 ? 'Account Fully Paid' : $currentBillYear . ' Bill Balance'; ?>
                                 </h4>
                                 <div class="balance-amount">
                                     ₵ <?php echo number_format($remainingBalance, 2); ?>
                                 </div>
                                 <?php if ($remainingBalance > 0): ?>
                                     <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;">
-                                        This amount needs to be paid
+                                        Outstanding for <?php echo $currentBillYear; ?> bill
                                     </p>
                                 <?php else: ?>
                                     <p style="margin: 10px 0 0 0; font-size: 14px; color: #065f46;">
-                                        ✅ All bills have been settled
+                                        <?php echo $hasCurrentBill ? $currentBillYear . ' bill fully settled' : 'All bills have been settled'; ?>
                                     </p>
                                 <?php endif; ?>
                             </div>
@@ -1536,7 +1555,7 @@ try {
                             </div>
                             
                             <div class="info-item" style="margin-bottom: 15px;">
-                                <div class="info-label">Remaining Balance</div>
+                                <div class="info-label"><?php echo $currentBillYear; ?> Balance</div>
                                 <div class="info-value balance <?php echo $remainingBalance <= 0 ? 'zero' : ''; ?>">
                                     ₵ <?php echo number_format($remainingBalance, 2); ?>
                                 </div>
@@ -1657,6 +1676,8 @@ try {
         const remainingBalance = <?php echo $remainingBalance; ?>;
         const propertyName = <?php echo json_encode($property['owner_name'] . "'s Property"); ?>;
         const propertyNumber = <?php echo json_encode($property['property_number']); ?>;
+        const currentBillYear = <?php echo $currentBillYear; ?>;
+        const hasCurrentBill = <?php echo $hasCurrentBill ? 'true' : 'false'; ?>;
         
         // Check if Font Awesome loaded, if not show emoji icons
         document.addEventListener('DOMContentLoaded', function() {
@@ -1680,11 +1701,11 @@ try {
             // Show balance status notification on page load
             if (remainingBalance > 0) {
                 setTimeout(() => {
-                    showNotification(`⚠️ Outstanding balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'warning');
+                    showNotification(`${currentBillYear} bill balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'warning');
                 }, 2000);
             } else {
                 setTimeout(() => {
-                    showNotification('✅ Account fully paid - No outstanding balance', 'success');
+                    showNotification(`${hasCurrentBill ? currentBillYear + ' bill fully paid' : 'Account fully paid'} - No outstanding balance`, 'success');
                 }, 2000);
             }
         }
@@ -1713,7 +1734,7 @@ try {
             balanceContent.innerHTML = `
                 <h3 style="margin: 0 0 20px 0; color: #2d3748; display: flex; align-items: center; gap: 10px; justify-content: center;">
                     <i class="fas fa-balance-scale" style="color: #4299e1;"></i>
-                    ⚖️ Balance Analysis
+                    Balance Analysis
                 </h3>
                 <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 20px 0;">
                     <h4 style="margin: 0 0 15px 0; color: #4299e1; font-size: 18px;">${propertyName}</h4>
@@ -1744,13 +1765,13 @@ try {
                                 background: ${remainingBalance > 0 ? '#fef3c7' : '#d1fae5'}; 
                                 padding: 20px; border-radius: 12px; margin-top: 20px;">
                         <h4 style="margin: 0 0 10px 0; color: ${remainingBalance > 0 ? '#92400e' : '#065f46'};">
-                            ${remainingBalance > 0 ? '⚠️ Outstanding Balance' : '✅ Account Status'}
+                            ${remainingBalance > 0 ? `${currentBillYear} Outstanding Balance` : 'Account Status'}
                         </h4>
                         <div style="font-size: 36px; font-weight: bold; color: ${remainingBalance > 0 ? '#92400e' : '#065f46'}; margin: 15px 0;">
                             ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}
                         </div>
                         <p style="margin: 10px 0 0 0; color: ${remainingBalance > 0 ? '#92400e' : '#065f46'};">
-                            ${remainingBalance > 0 ? 'This amount needs to be paid to clear the account' : 'All bills have been fully settled'}
+                            ${remainingBalance > 0 ? `Outstanding for ${currentBillYear} bill` : (hasCurrentBill ? `${currentBillYear} bill fully settled` : 'All bills have been settled')}
                         </p>
                     </div>
                 </div>
@@ -1760,33 +1781,33 @@ try {
                             background: #10b981; color: white; padding: 12px 20px; border: none; border-radius: 8px;
                             text-decoration: none; font-weight: 600; transition: all 0.3s; display: inline-flex;
                             align-items: center; gap: 8px; font-size: 14px;">
-                            <i class="fas fa-cash-register"></i> 💳 Record Payment
+                            <i class="fas fa-cash-register"></i> Record Payment
                         </a>
                         <a href="../billing/print.php?property_id=<?php echo $property['property_id']; ?>" style="
                             background: #4299e1; color: white; padding: 12px 20px; border: none; border-radius: 8px;
                             text-decoration: none; font-weight: 600; transition: all 0.3s; display: inline-flex;
                             align-items: center; gap: 8px; font-size: 14px;">
-                            <i class="fas fa-print"></i> 🖨️ Print Bill
+                            <i class="fas fa-print"></i> Print Bill
                         </a>
                     ` : `
                         <a href="../billing/print.php?property_id=<?php echo $property['property_id']; ?>" style="
                             background: #4299e1; color: white; padding: 12px 20px; border: none; border-radius: 8px;
                             text-decoration: none; font-weight: 600; transition: all 0.3s; display: inline-flex;
                             align-items: center; gap: 8px; font-size: 14px;">
-                            <i class="fas fa-print"></i> 🖨️ Print Bill
+                            <i class="fas fa-print"></i> Print Bill
                         </a>
                     `}
                     <button onclick="printPropertyDetails()" style="
                         background: #64748b; color: white; padding: 12px 20px; border: none; border-radius: 8px;
                         cursor: pointer; font-weight: 600; transition: all 0.3s; display: inline-flex;
                         align-items: center; gap: 8px; font-size: 14px;">
-                        <i class="fas fa-print"></i> 🖨️ Print Details
+                        <i class="fas fa-print"></i> Print Details
                     </button>
                     <button onclick="this.closest('.balance-modal').remove()" style="
                         background: #94a3b8; color: white; padding: 12px 20px; border: none; border-radius: 8px;
                         cursor: pointer; font-weight: 600; transition: all 0.3s; display: inline-flex;
                         align-items: center; gap: 8px; font-size: 14px;">
-                        <i class="fas fa-times"></i> ❌ Close
+                        <i class="fas fa-times"></i> Close
                     </button>
                 </div>
             `;
@@ -1838,7 +1859,7 @@ try {
                 </head>
                 <body>
                     <div class="header">
-                        <h1>🏠 Property Profile - Officer Portal</h1>
+                        <h1>Property Profile - Officer Portal</h1>
                         <h2>${propertyData.name}</h2>
                         <p>Property Number: ${propertyData.number}</p>
                     </div>
@@ -1877,9 +1898,9 @@ try {
                         </div>
                     </div>
                     <div class="balance-section">
-                        <h3>${propertyData.remainingBalance > 0 ? '⚠️ Outstanding Balance' : '✅ Account Status'}</h3>
+                        <h3>${propertyData.remainingBalance > 0 ? currentBillYear + ' Outstanding Balance' : 'Account Status'}</h3>
                         <div class="balance">₵ ${propertyData.remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-                        <p>${propertyData.remainingBalance > 0 ? 'This amount needs to be paid to clear the account' : 'All bills have been fully settled'}</p>
+                        <p>${propertyData.remainingBalance > 0 ? `Outstanding for ${currentBillYear} bill` : (hasCurrentBill ? `${currentBillYear} bill fully settled` : 'All bills have been settled')}</p>
                     </div>
                     <div style="margin-top: 50px; text-align: center; color: #64748b; font-size: 14px;">
                         Generated by Officer Portal on ${new Date().toLocaleDateString('en-US', {
@@ -2043,17 +2064,17 @@ try {
                 if (remainingBalance > 1000) {
                     alerts.push({
                         type: 'danger',
-                        message: `🚨 High outstanding balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                        message: `High ${currentBillYear} bill balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
                     });
                 } else if (remainingBalance > 500) {
                     alerts.push({
                         type: 'warning', 
-                        message: `⚠️ Moderate outstanding balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                        message: `Moderate ${currentBillYear} bill balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
                     });
                 } else {
                     alerts.push({
                         type: 'info',
-                        message: `ℹ️ Low outstanding balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                        message: `Low ${currentBillYear} bill balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`
                     });
                 }
             }
@@ -2110,7 +2131,7 @@ try {
                             Rooms: <?php echo $property['number_of_rooms']; ?>
                         </p>
                         <p style="margin-bottom: 0; font-size: 12px; font-weight: bold; color: ${remainingBalance > 0 ? '#dc2626' : '#059669'};">
-                            Balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                            ${currentBillYear} Balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}
                         </p>
                     </div>
                 `
@@ -2127,8 +2148,10 @@ try {
         });
         <?php endif; ?>
 
-        console.log('✅ Officer property profile page initialized successfully');
-        console.log(`💰 Remaining Balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
+        console.log('✅ Officer property profile with FIXED balance calculation initialized successfully');
+        console.log('Current bill year:', currentBillYear);
+        console.log(`Current bill balance: ₵ ${remainingBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
+        console.log('Has current bill:', hasCurrentBill);
     </script>
 </body>
 </html>

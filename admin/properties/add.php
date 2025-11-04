@@ -33,7 +33,6 @@ if (!hasPermission('properties.create')) {
 
 // Check session expiration
 if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 5600)) {
-    // Session expired (30 minutes)
     session_unset();
     session_destroy();
     setFlashMessage('error', 'Your session has expired. Please log in again.');
@@ -74,11 +73,12 @@ try {
     // Get property fee structure for dynamic billing
     $propertyFees = $db->fetchAll("SELECT * FROM property_fee_structure WHERE is_active = 1 ORDER BY structure, property_use");
     
-    // Get zones for dropdown
-    $zones = $db->fetchAll("SELECT * FROM zones ORDER BY zone_name");
+    // Get zones for dropdown with codes
+    $zones = $db->fetchAll("SELECT zone_id, zone_name, zone_code FROM zones ORDER BY zone_name");
     
-    // Get sub-zones for dropdown
-    $subZones = $db->fetchAll("SELECT sz.*, z.zone_name FROM sub_zones sz 
+    // Get sub-zones for dropdown with codes
+    $subZones = $db->fetchAll("SELECT sz.sub_zone_id, sz.sub_zone_name, sz.sub_zone_code, sz.zone_id, z.zone_name, z.zone_code 
+                               FROM sub_zones sz 
                                LEFT JOIN zones z ON sz.zone_id = z.zone_id 
                                ORDER BY z.zone_name, sz.sub_zone_name");
     
@@ -147,18 +147,39 @@ try {
             try {
                 $db->beginTransaction();
                 
+                // Get zone and sub-zone codes for account number generation
+                $zoneResult = $db->fetchAll("SELECT zone_code FROM zones WHERE zone_id = ?", [$formData['zone_id']]);
+                $subZoneResult = $db->fetchAll("SELECT sub_zone_code FROM sub_zones WHERE sub_zone_id = ?", [$formData['sub_zone_id']]);
+                
+                if (empty($zoneResult) || empty($subZoneResult)) {
+                    throw new Exception("Invalid zone or sub-zone selection.");
+                }
+                
+                $zoneCode = $zoneResult[0]['zone_code'];
+                $subZoneCode = $subZoneResult[0]['sub_zone_code'];
+                
+                // Get the next property number for this zone-subzone combination
+                $countQuery = "SELECT COUNT(*) as count FROM properties 
+                              WHERE zone_id = ? AND sub_zone_id = ?";
+                $countResult = $db->fetchAll($countQuery, [$formData['zone_id'], $formData['sub_zone_id']]);
+                $nextNumber = ($countResult[0]['count'] ?? 0) + 1;
+                
+                // Generate account number with format: PROP-ZONECODE-SUBZONECODE-NUMBER
+                $propertyNumber = sprintf('PROP-%s-%s-%05d', $zoneCode, $subZoneCode, $nextNumber);
+                
                 // Calculate amount payable
                 $amount_payable = $formData['old_bill'] + $formData['arrears'] + $formData['current_bill'] - $formData['previous_payments'];
                 
                 // Insert property
                 $query = "INSERT INTO properties (
-                    owner_name, telephone, gender, location, latitude, longitude, 
+                    property_number, owner_name, telephone, gender, location, latitude, longitude, 
                     structure, ownership_type, property_type, number_of_rooms, property_use,
                     old_bill, previous_payments, arrears, current_bill, amount_payable, 
                     batch, zone_id, sub_zone_id, created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                 
                 $params = [
+                    $propertyNumber,
                     $formData['owner_name'],
                     $formData['telephone'],
                     $formData['gender'],
@@ -182,23 +203,17 @@ try {
                 ];
                 
                 // Execute insert
-                try {
-                    $pdo = $db->getConnection();
-                    $stmt = $pdo->prepare($query);
-                    $stmt->execute($params);
-                    $propertyId = $pdo->lastInsertId();
-                } catch (Exception $e) {
-                    // Fallback if getConnection() doesn't exist
-                    $propertyId = 1; // temporary - replace with actual insert method
-                    throw new Exception("Please update insert method for your Database class");
-                }
+                $result = $db->execute($query, $params);
+                
+                // Get the last inserted ID
+                $propertyId = $db->getConnection()->lastInsertId();
                 
                 // Log the action
-                writeLog("Property created: {$formData['owner_name']} property (ID: $propertyId) by user {$currentUser['username']}", 'INFO');
+                writeLog("Property created: {$formData['owner_name']} property (ID: $propertyId, Number: $propertyNumber) by user {$currentUser['username']}", 'INFO');
                 
                 $db->commit();
                 
-                setFlashMessage('success', 'Property registered successfully!');
+                setFlashMessage('success', 'Property registered successfully with account number: ' . $propertyNumber);
                 header('Location: view.php?id=' . $propertyId);
                 exit();
                 
@@ -1584,8 +1599,9 @@ $subZonesJson = json_encode($subZones);
                                     <option value="">Select Zone</option>
                                     <?php foreach ($zones as $zone): ?>
                                         <option value="<?php echo $zone['zone_id']; ?>" 
+                                                data-zone-code="<?php echo htmlspecialchars($zone['zone_code']); ?>"
                                                 <?php echo $formData['zone_id'] == $zone['zone_id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($zone['zone_name']); ?>
+                                            <?php echo htmlspecialchars($zone['zone_name']); ?> (<?php echo htmlspecialchars($zone['zone_code']); ?>)
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -1600,7 +1616,7 @@ $subZonesJson = json_encode($subZones);
                                 <select name="sub_zone_id" id="subZoneSelect" class="form-control" required>
                                     <option value="">Select Sub-Zone</option>
                                 </select>
-                                <div class="form-help">Specific sub-zone within the selected zone</div>
+                                <div class="form-help">Specific sub-zone within the selected zone (Required)</div>
                             </div>
                         </div>
                         
@@ -1850,7 +1866,8 @@ $subZonesJson = json_encode($subZones);
                 zoneSubZones.forEach(function(subZone) {
                     const option = document.createElement('option');
                     option.value = subZone.sub_zone_id;
-                    option.textContent = subZone.sub_zone_name;
+                    option.dataset.subZoneCode = subZone.sub_zone_code;
+                    option.textContent = subZone.sub_zone_name + ' (' + subZone.sub_zone_code + ')';
                     subZoneSelect.appendChild(option);
                 });
                 
@@ -2208,20 +2225,19 @@ $subZonesJson = json_encode($subZones);
                         border-radius: 50%; display: flex; align-items: center; justify-content: center;
                         margin: 0 auto 25px; animation: bounce 2s ease-in-out infinite;">
                         <i class="fas fa-rocket" style="font-size: 2.5rem; color: white;"></i>
-                        <span style="font-size: 2.5rem; display: none;">🚀</span>
                     </div>
                     
                     <h3 style="margin: 0 0 15px 0; font-weight: 700; font-size: 1.8rem;
                         text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${feature}</h3>
                     
                     <p style="margin: 0 0 30px 0; opacity: 0.9; font-size: 1.1rem; line-height: 1.6;">
-                        This amazing feature is coming soon! 🎉<br>We're working hard to bring you the best experience.</p>
+                        This amazing feature is coming soon! We're working hard to bring you the best experience.</p>
                     
                     <button onclick="closeModal()" style="background: rgba(255,255,255,0.2);
                         border: 2px solid rgba(255,255,255,0.3); color: white; padding: 12px 30px;
                         border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 1rem;
                         transition: all 0.3s ease; backdrop-filter: blur(10px);">
-                        Awesome! Let's Go 🚀
+                        Awesome! Let's Go
                     </button>
                     
                     <div style="margin-top: 20px; font-size: 0.9rem; opacity: 0.7;">

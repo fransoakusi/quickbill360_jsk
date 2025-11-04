@@ -136,6 +136,10 @@ try {
             $errors[] = 'Please select a zone.';
         }
         
+        if ($formData['sub_zone_id'] <= 0) {
+            $errors[] = 'Please select a sub-zone.';
+        }
+        
         // Check if business name already exists
         if (empty($errors)) {
             $existingBusiness = $db->fetchRow(
@@ -153,18 +157,43 @@ try {
             try {
                 $db->beginTransaction();
                 
+                // Get zone and sub-zone codes for account number generation
+                $zoneData = $db->fetchRow(
+                    "SELECT zone_code FROM zones WHERE zone_id = ?",
+                    [$formData['zone_id']]
+                );
+                
+                $subZoneData = $db->fetchRow(
+                    "SELECT sub_zone_code FROM sub_zones WHERE sub_zone_id = ?",
+                    [$formData['sub_zone_id']]
+                );
+                
+                $zoneCode = $zoneData['zone_code'] ?? 'Z';
+                $subZoneCode = $subZoneData['sub_zone_code'] ?? 'SZ';
+                
+                // Get the next business ID for the zone-subzone combination
+                $countQuery = "SELECT COUNT(*) as count FROM businesses 
+                              WHERE zone_id = ? AND sub_zone_id = ?";
+                $countResult = $db->fetchRow($countQuery, [$formData['zone_id'], $formData['sub_zone_id']]);
+                $nextNumber = ($countResult['count'] ?? 0) + 1;
+                
+                // Generate account number: BIZ-ZONECODE-SUBZONECODE-NUMBER
+                // Example: BIZ-CZ01-MA01-0001
+                $accountNumber = sprintf('BIZ-%s-%s-%04d', $zoneCode, $subZoneCode, $nextNumber);
+                
                 // Calculate amount payable
                 $amount_payable = $formData['old_bill'] + $formData['arrears'] + $formData['current_bill'] - $formData['previous_payments'];
                 
                 // Insert business
                 $query = "INSERT INTO businesses (
-                    business_name, owner_name, business_type, category, telephone, 
+                    account_number, business_name, owner_name, business_type, category, telephone, 
                     exact_location, latitude, longitude, old_bill, previous_payments, 
                     arrears, current_bill, amount_payable, batch, status, zone_id, 
                     sub_zone_id, created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                 
                 $params = [
+                    $accountNumber,
                     $formData['business_name'],
                     $formData['owner_name'],
                     $formData['business_type'],
@@ -199,11 +228,11 @@ try {
                 }
                 
                 // Log the action
-                writeLog("Business created: {$formData['business_name']} (ID: $businessId) by user {$currentUser['username']}", 'INFO');
+                writeLog("Business created: {$formData['business_name']} (ID: $businessId, Account: $accountNumber) by user {$currentUser['username']}", 'INFO');
                 
                 $db->commit();
                 
-                setFlashMessage('success', 'Business registered successfully!');
+                setFlashMessage('success', 'Business registered successfully with Account Number: ' . $accountNumber);
                 header('Location: view.php?id=' . $businessId);
                 exit();
                 
@@ -1592,12 +1621,12 @@ foreach ($businessFees as $fee) {
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-map-marked"></i>
-                                    Sub-Zone
+                                    Sub-Zone <span class="required">*</span>
                                 </label>
-                                <select name="sub_zone_id" id="subZoneSelect" class="form-control">
+                                <select name="sub_zone_id" id="subZoneSelect" class="form-control" required>
                                     <option value="">Select Sub-Zone</option>
                                 </select>
-                                <div class="form-help">Specific sub-zone within the selected zone</div>
+                                <div class="form-help">Specific sub-zone within the selected zone (required for account number)</div>
                             </div>
                         </div>
                     </div>
